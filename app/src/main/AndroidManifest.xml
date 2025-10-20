@@ -24,7 +24,7 @@
 
         <activity android:name=".dashboard.DashboardActivity" />
         <activity android:name=".statusizin.StatusIzinActivity" />
-
+<!--anan test-->
     </application>
 
 </manifest>
