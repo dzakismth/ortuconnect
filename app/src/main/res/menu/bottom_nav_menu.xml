@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_beranda"
+        android:icon="@drawable/ic_home"
+        android:title="Beranda" />
+    <item
+        android:id="@+id/nav_absensi"
+        android:icon="@drawable/ic_absensi"
+        android:title="Absensi" />
+    <item
+        android:id="@+id/nav_kalender"
+        android:icon="@drawable/ic_calendar"
+        android:title="Kalender" />
+    <item
+        android:id="@+id/nav_perizinan"
+        android:icon="@drawable/ic_perizinan"
+        android:title="Perizinan" />
+    <item
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/ic_profile"
+        android:title="Profile" />
+</menu>

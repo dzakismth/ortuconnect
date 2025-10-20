@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Mobiles Tktech</string>
+    <string name="login_title">Login</string>
+    <string name="username_hint">Username</string>
+    <string name="password_hint">Password</string>
+    <string name="login_button">Login</string>
+    <string name="pilih_bulan">Pilih Bulan</string>
+    <string-array name="months_array">
+        <item>@string/pilih_bulan</item>
+        <item>Oktober 2025</item>
+        <item>September 2025</item>
+    </string-array>
+</resources>
