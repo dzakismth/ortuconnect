@@ -20,4 +20,9 @@
         <item>November</item>
         <item>Desember</item>
     </string-array>
+    <string-array name="jenis_izin_array">
+        <item>Sakit</item>
+        <item>Izin</item>
+        <item>Cuti</item>
+    </string-array>
 </resources>

@@ -5,23 +5,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background_gradient_blue_purple"
-    tools:context=".kalender.KalenderFragment"> <!-- Ganti .kalender.KalenderFragment sesuai package Anda -->
+    tools:context=".kalender.KalenderFragment"> <TextView
+    android:id="@+id/tv_title_kalender"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Kalender Kegiatan"
+    android:textColor="@android:color/white"
+    android:textSize="20sp"
+    android:textStyle="bold"
+    android:layout_marginTop="24dp"
+    android:layout_marginStart="24dp"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Header Kalender -->
-    <TextView
-        android:id="@+id/tv_title_kalender"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Kalender Kegiatan"
-        android:textColor="@android:color/white"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginTop="24dp"
-        android:layout_marginStart="24dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Card Putih Utama (Tempat CalendarView) -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_kalender"
         android:layout_width="match_parent"
@@ -42,7 +38,6 @@
             android:paddingVertical="16dp"
             android:paddingHorizontal="8dp">
 
-            <!-- Bulan dan Tahun (Sesuai Foto: Oktober 2025) -->
             <TextView
                 android:id="@+id/tv_current_month"
                 android:layout_width="wrap_content"
@@ -54,7 +49,6 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="8dp"/>
 
-            <!-- CalendarView untuk Tampilan Kalender -->
             <CalendarView
                 android:id="@+id/calendar_view"
                 android:layout_width="match_parent"
@@ -62,7 +56,6 @@
                 android:paddingVertical="8dp"
                 android:firstDayOfWeek="2"
                 android:showWeekNumber="false"
-                android:weekSeparatorLineEnabled="false"
                 android:minDate="01/01/2025"
                 android:maxDate="31/12/2025"
                 android:dateTextAppearance="@style/CalenderViewDateCustomText"
@@ -72,7 +65,6 @@
     </androidx.cardview.widget.CardView>
 
 
-    <!-- Agenda Terdekat (Header) -->
     <TextView
         android:id="@+id/tv_agenda_terdekat"
         android:layout_width="wrap_content"
@@ -86,7 +78,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/card_kalender" />
 
-    <!-- RecyclerView untuk Daftar Agenda -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_agenda_list"
         android:layout_width="match_parent"
