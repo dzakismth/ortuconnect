@@ -30,27 +30,6 @@ public class HomeFragment extends Fragment {
         CardView cardKehadiran = view.findViewById(R.id.card_kehadiran);
         CardView cardStatusIzin = view.findViewById(R.id.card_status_izin);
 
-        // 1. Click Listener untuk Card Jadwal/Pengumuman
-        if (cardJadwal != null) {
-            cardJadwal.setOnClickListener(v -> {
-                // Di sini Anda bisa menampilkan detail pengumuman dalam dialog atau menuju KalenderFragment
-                Toast.makeText(getContext(), "Detail Jadwal Hari Ini dibuka", Toast.LENGTH_SHORT).show();
-            });
-        }
-
-        // 2. Click Listener untuk Card Kehadiran -> Pindah ke AbsensiFragment
-        if (cardKehadiran != null) {
-            cardKehadiran.setOnClickListener(v -> {
-                // Pindah ke AbsensiFragment
-            });
-        }
-
-        // 3. Click Listener untuk Card Status Izin -> Pindah ke PerizinanFragment
-        if (cardStatusIzin != null) {
-            cardStatusIzin.setOnClickListener(v -> {
-                // Pindah ke PerizinanFragment
-            });
-        }
     }
 
     // Fungsi utilitas untuk memuat Fragment baru
