@@ -7,7 +7,17 @@
     <string name="pilih_bulan">Pilih Bulan</string>
     <string-array name="months_array">
         <item>@string/pilih_bulan</item>
-        <item>Oktober 2025</item>
-        <item>September 2025</item>
+        <item>Januari</item>
+        <item>Februari</item>
+        <item>Maret</item>
+        <item>April</item>
+        <item>Mei</item>
+        <item>Juni</item>
+        <item>Juli</item>
+        <item>Agustus</item>
+        <item>September</item>
+        <item>Oktober</item>
+        <item>November</item>
+        <item>Desember</item>
     </string-array>
 </resources>

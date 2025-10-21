@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/background_gradient_blue_purple">
+    android:background="@drawable/background_gradient_blue_purple"
+    tools:context=".kalender.KalenderFragment"> <!-- Ganti .kalender.KalenderFragment sesuai package Anda -->
 
+    <!-- Header Kalender -->
     <TextView
         android:id="@+id/tv_title_kalender"
         android:layout_width="wrap_content"
@@ -18,36 +21,83 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Card Putih Utama (Tempat CalendarView) -->
     <androidx.cardview.widget.CardView
+        android:id="@+id/card_kalender"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
+        android:layout_marginHorizontal="16dp"
         app:cardCornerRadius="24dp"
         app:cardBackgroundColor="@android:color/white"
+        app:cardElevation="4dp"
         app:layout_constraintTop_toBottomOf="@id/tv_title_kalender"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:paddingVertical="16dp"
+            android:paddingHorizontal="8dp">
 
-            <View
+            <!-- Bulan dan Tahun (Sesuai Foto: Oktober 2025) -->
+            <TextView
+                android:id="@+id/tv_current_month"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Oktober 2025"
+                android:textColor="@android:color/black"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- CalendarView untuk Tampilan Kalender -->
+            <CalendarView
+                android:id="@+id/calendar_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@android:color/transparent"
-                android:minHeight="300dp" /> <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="* Bagian ini untuk detail kegiatan/event"
-            android:layout_marginTop="16dp"
-            android:textColor="@android:color/darker_gray"/>
+                android:paddingVertical="8dp"
+                android:firstDayOfWeek="2"
+                android:showWeekNumber="false"
+                android:weekSeparatorLineEnabled="false"
+                android:minDate="01/01/2025"
+                android:maxDate="31/12/2025"
+                android:dateTextAppearance="@style/CalenderViewDateCustomText"
+                android:weekDayTextAppearance="@style/CalenderViewWeekCustomText"/>
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+
+    <!-- Agenda Terdekat (Header) -->
+    <TextView
+        android:id="@+id/tv_agenda_terdekat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Agenda Terdekat"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginTop="24dp"
+        android:layout_marginStart="24dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/card_kalender" />
+
+    <!-- RecyclerView untuk Daftar Agenda -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_agenda_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="12dp"
+        android:paddingBottom="16dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:layout_constraintTop_toBottomOf="@id/tv_agenda_terdekat"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:listitem="@layout/item_kegiatan"
+        tools:itemCount="3" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
