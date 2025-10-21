@@ -1,5 +1,6 @@
 package com.example.mobiles_tktech
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -9,6 +10,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -18,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
@@ -27,28 +32,81 @@ import com.example.mobiles_tktech.ui.theme.MobilesTktechTheme
 import androidx.compose.ui.res.painterResource
 import org.json.JSONObject
 
+// --- SESSION MANAGER ---
+class SessionManager(context: Context) {
+    companion object {
+        private const val PREF_NAME = "LoginPrefs"
+        private const val KEY_IS_LOGGED_IN = "isLoggedIn"
+        private const val KEY_USER_TOKEN = "userToken"
+    }
+
+    private val sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private val editor = sharedPreferences.edit()
+
+    fun createLoginSession(isLoggedIn: Boolean, token: String?) {
+        editor.putBoolean(KEY_IS_LOGGED_IN, isLoggedIn)
+        editor.putString(KEY_USER_TOKEN, token)
+        editor.apply()
+    }
+
+    fun isLoggedIn(): Boolean {
+        return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
+    }
+
+    fun logoutUser() {
+        editor.clear()
+        editor.apply()
+    }
+}
+// --------------------------------------------------------------------------
+
 class MainActivitycok : ComponentActivity() {
+    private lateinit var sessionManager: SessionManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Inisialisasi Session Manager
+        sessionManager = SessionManager(applicationContext)
+
+        // CEK SESI: Jika sudah login, langsung ke Dashboard
+        if (sessionManager.isLoggedIn()) {
+            startDashboardActivity()
+            return
+        }
+
         setContent {
             MobilesTktechTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    LoginScreen()
+                    // Berikan instance sessionManager ke Composable
+                    LoginScreen(sessionManager)
                 }
             }
         }
     }
+
+    // Fungsi untuk memulai DashboardActivity
+    private fun startDashboardActivity() {
+        val intent = Intent(this, DashboardActivity::class.java)
+        startActivity(intent)
+        finish() // Tutup Login Activity
+    }
 }
 
+
 @Composable
-fun LoginScreen() {
+fun LoginScreen(sessionManager: SessionManager) {
     val context = LocalContext.current
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+
+    // VARIABEL BARU UNTUK MENGELOLA VISIBILITAS PASSWORD
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    // END VARIABEL BARU
 
     Box(
         modifier = Modifier
@@ -91,15 +149,32 @@ fun LoginScreen() {
                         .padding(top = 24.dp)
                 )
 
+                // PERUBAHAN UTAMA UNTUK PASSWORD INPUT
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Masukan Kata Sandi") },
-                    visualTransformation = PasswordVisualTransformation(),
+                    // Logika visual transformation
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+
+                    // Tambahkan tombol toggle (Trailing Icon)
+                    trailingIcon = {
+                        val image = if (passwordVisible)
+                            Icons.Filled.Visibility // Ikon mata terbuka
+                        else
+                            Icons.Filled.VisibilityOff // Ikon mata tertutup
+
+                        val description = if (passwordVisible) "Hide password" else "Show password"
+
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(imageVector = image, contentDescription = description)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 16.dp)
                 )
+                // AKHIR PERUBAHAN
 
                 Button(
                     onClick = {
@@ -120,9 +195,20 @@ fun LoginScreen() {
                                     val success = response.optBoolean("success")
                                     val message = response.optString("message")
                                     if (success) {
+                                        // Dapatkan token jika ada (asumsi API mengembalikan token)
+                                        val token = response.optString("token") ?: "default_token"
+
+                                        // SIMPAN SESI SAAT LOGIN BERHASIL
+                                        sessionManager.createLoginSession(true, token)
+
                                         Toast.makeText(context, "Login Berhasil", Toast.LENGTH_SHORT).show()
+
+                                        // Pindah ke Dashboard Activity
+                                        val activity = context as? ComponentActivity
                                         val intent = Intent(context, DashboardActivity::class.java)
                                         context.startActivity(intent)
+                                        activity?.finish() // Tutup Login Activity
+
                                     } else {
                                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                     }
@@ -139,7 +225,8 @@ fun LoginScreen() {
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 24.dp)
+                        .padding(top = 24.dp),
+                    enabled = !isLoading
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))

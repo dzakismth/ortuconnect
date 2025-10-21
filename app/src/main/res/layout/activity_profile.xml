@@ -60,7 +60,6 @@
         app:cardCornerRadius="24dp"
         app:cardBackgroundColor="@android:color/white"
         app:layout_constraintTop_toBottomOf="@id/layout_profile_info"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -71,13 +70,12 @@
             android:padding="24dp">
 
             <Button
-                android:id="@+id/btn_logout"
-                android:layout_width="match_parent"
+                android:id="@+id/btnKeluar"  android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Keluar Dari Perangkat"
+                android:text="KELUAR DARI PERANGKAT"
                 android:textColor="@android:color/white"
                 android:backgroundTint="@color/red_logout"
-                android:layout_marginTop="16dp"/>
+                />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>
