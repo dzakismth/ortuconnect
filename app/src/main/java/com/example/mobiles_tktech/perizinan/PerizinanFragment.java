@@ -10,8 +10,6 @@ import androidx.fragment.app.Fragment;
 import com.example.mobiles_tktech.R;
 
 public class PerizinanFragment extends Fragment {
-
-    // Inflate layout Perizinan Anda
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {

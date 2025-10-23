@@ -16,8 +16,6 @@ import com.example.mobiles_tktech.R;
 
 public class ProfileFragment extends Fragment {
 
-    // Asumsi layout XML Profile Anda dimuat di sini.
-    // Pastikan R.layout.activity_profile adalah nama file XML Profile Anda.
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -27,8 +25,6 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        // Dapatkan referensi tombol. Pastikan ID ini ada di XML Profil Anda.
         Button btnLogout = view.findViewById(R.id.btnKeluar);
 
         if (btnLogout != null) {
@@ -39,23 +35,15 @@ public class ProfileFragment extends Fragment {
     }
 
     private void logoutUser() {
-        // 1. Hapus data sesi dari SharedPreferences
-        // Penting: Ganti "LoginPrefs" jika Anda menggunakan nama SharedPreferences yang berbeda di SessionManager.
         SharedPreferences sharedPref = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
 
-        editor.clear(); // Menghapus semua data sesi (status login, token, dll.)
+        editor.clear();
         editor.apply();
 
-        // 2. Arahkan pengguna kembali ke Login Activity
         Intent intent = new Intent(getActivity(), MainActivitycok.class);
-
-        // Flag penting: Membersihkan semua Activity sebelumnya
-        // Ini memastikan tombol back tidak akan membawa user kembali ke Dashboard
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
-
-        // Selesaikan Activity induk (DashboardActivity)
         requireActivity().finish();
     }
 }
