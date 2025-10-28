@@ -8,7 +8,6 @@
     android:background="@drawable/background_gradient_blue_purple"
     tools:context=".dashboard.HomeFragment">
 
-    <!-- Judul Halaman -->
     <TextView
         android:id="@+id/tv_title_beranda"
         android:layout_width="wrap_content"
@@ -22,7 +21,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Scroll View untuk konten agar responsif -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -40,7 +38,6 @@
             android:paddingTop="24dp"
             android:paddingBottom="100dp">
 
-            <!-- 1. CARD PROFIL (Tidak perlu diklik, tapi bisa saja) -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_profil"
                 android:layout_width="match_parent"
@@ -57,7 +54,6 @@
                     android:padding="16dp"
                     android:gravity="center_vertical">
 
-                    <!-- Ganti dengan image siswa yang benar, ini hanya placeholder -->
                     <ImageView
                         android:layout_width="60dp"
                         android:layout_height="60dp"
@@ -91,7 +87,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- 2. CARD JADWAL/PENGUMUMAN HARI INI (Dapat diklik, ID: card_jadwal) -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_jadwal"
                 android:layout_width="match_parent"
@@ -129,7 +124,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- 3. CARD KEHADIRAN MINGGU INI (Dapat diklik, ID: card_kehadiran) -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_kehadiran"
                 android:layout_width="match_parent"
@@ -167,7 +161,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- 4. CARD STATUS IZIN TERBARU (Dapat diklik, ID: card_status_izin) -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_status_izin"
                 android:layout_width="match_parent"

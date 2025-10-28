@@ -12,7 +12,6 @@ import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -32,9 +31,9 @@ public class ProfileFragment extends Fragment {
     private TextView tvAnakNama, tvAnakAlamat, tvAnakTglLahir, tvOrtuNama, tvOrtuPhone, tvProfileNameTop, tvProfileClass;
     private ImageView imgEditIcon;
     private RequestQueue requestQueue;
-    private String idSiswa;
 
-    private static final String URL_UPDATE_PROFILE = "http://ortuconnect.atwebpages.com/api/update_profile.php";
+    private static final String BASE_URL = "http://ortuconnect.atwebpages.com/api/profile.php";
+    private String usernameOrtu = "";
 
     @Nullable
     @Override
@@ -49,7 +48,7 @@ public class ProfileFragment extends Fragment {
         requestQueue = Volley.newRequestQueue(requireContext());
 
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        idSiswa = prefs.getString("id_siswa", ""); // disimpan waktu login
+        usernameOrtu = prefs.getString("username", "");
 
         tvAnakNama = view.findViewById(R.id.detail_name_anak).findViewById(R.id.tvDetailValue);
         tvAnakAlamat = view.findViewById(R.id.detail_alamat).findViewById(R.id.tvDetailValue);
@@ -66,22 +65,14 @@ public class ProfileFragment extends Fragment {
         ((TextView) view.findViewById(R.id.detail_name_ortu).findViewById(R.id.tvDetailLabel)).setText("Nama Orang Tua:");
         ((TextView) view.findViewById(R.id.detail_phone_ortu).findViewById(R.id.tvDetailLabel)).setText("Nomor Telepon:");
 
-
-        Button btnLogout = view.findViewById(R.id.btnKeluar);
-        btnLogout.setOnClickListener(v -> logoutUser());
-
+        view.findViewById(R.id.btnKeluar).setOnClickListener(v -> logoutUser());
         imgEditIcon.setOnClickListener(v -> showEditDataDialog());
 
         loadProfileData();
     }
 
     private void loadProfileData() {
-        SharedPreferences sharedPref = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        String username = sharedPref.getString("username", "");
-
-        String url = "http://ortuconnect.atwebpages.com/api/profile.php?username=" + username;
-
-        RequestQueue queue = Volley.newRequestQueue(getContext());
+        String url = BASE_URL + "?username=" + usernameOrtu;
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
@@ -94,11 +85,8 @@ public class ProfileFragment extends Fragment {
                             tvAnakTglLahir.setText(data.getString("tanggal_lahir"));
                             tvOrtuNama.setText(data.getString("nama_ortu"));
                             tvOrtuPhone.setText(data.getString("no_telp_ortu"));
-                            TextView tvProfileNameTop = getView().findViewById(R.id.tvProfileNameTop);
-                            TextView tvProfileClass = getView().findViewById(R.id.tvProfileClass);
                             tvProfileNameTop.setText(data.getString("nama_siswa"));
                             tvProfileClass.setText(data.getString("kelas").toUpperCase());
-
                         } else {
                             Toast.makeText(getContext(), "Data tidak ditemukan", Toast.LENGTH_SHORT).show();
                         }
@@ -109,9 +97,8 @@ public class ProfileFragment extends Fragment {
                 error -> Toast.makeText(getContext(), "Gagal koneksi ke server", Toast.LENGTH_SHORT).show()
         );
 
-        queue.add(request);
+        requestQueue.add(request);
     }
-
 
     private void showEditDataDialog() {
         Context context = requireContext();
@@ -120,35 +107,37 @@ public class ProfileFragment extends Fragment {
         View dialogView = inflater.inflate(R.layout.dialog_edit_data, null);
         builder.setView(dialogView);
 
-        LinearLayout llEditFieldsContainer = dialogView.findViewById(R.id.ll_edit_fields_container);
+        LinearLayout llContainer = dialogView.findViewById(R.id.ll_edit_fields_container);
         Button btnSimpan = dialogView.findViewById(R.id.btn_simpan_dialog);
         Button btnBatal = dialogView.findViewById(R.id.btn_batal_dialog);
 
+        // field edit
         final EditText edtNamaAnak = createEditText(context, "Nama Anak", tvAnakNama.getText().toString());
+        final EditText edtTanggalLahir = createEditText(context, "Tanggal Lahir", tvAnakTglLahir.getText().toString());
         final EditText edtAlamat = createEditText(context, "Alamat", tvAnakAlamat.getText().toString());
-        final EditText edtTglLahir = createEditText(context, "Tanggal Lahir", tvAnakTglLahir.getText().toString());
         final EditText edtNamaOrtu = createEditText(context, "Nama Orang Tua", tvOrtuNama.getText().toString());
-        final EditText edtTelepon = createEditText(context, "Nomor Telepon", tvOrtuPhone.getText().toString());
+        final EditText edtNoTelp = createEditText(context, "Nomor Telepon", tvOrtuPhone.getText().toString());
+        final EditText edtKelas = createEditText(context, "Kelas", tvProfileClass.getText().toString());
+        edtKelas.setEnabled(false);
 
-        llEditFieldsContainer.addView(edtNamaAnak);
-        llEditFieldsContainer.addView(edtAlamat);
-        llEditFieldsContainer.addView(edtTglLahir);
-        llEditFieldsContainer.addView(edtNamaOrtu);
-        llEditFieldsContainer.addView(edtTelepon);
+        llContainer.addView(edtNamaAnak);
+        llContainer.addView(edtTanggalLahir);
+        llContainer.addView(edtAlamat);
+        llContainer.addView(edtNamaOrtu);
+        llContainer.addView(edtNoTelp);
+        llContainer.addView(edtKelas);
 
         AlertDialog dialog = builder.create();
         dialog.show();
 
-        btnSimpan.setOnClickListener(v -> {
-            updateProfile(
-                    edtNamaAnak.getText().toString(),
-                    edtAlamat.getText().toString(),
-                    edtTglLahir.getText().toString(),
-                    edtNamaOrtu.getText().toString(),
-                    edtTelepon.getText().toString(),
-                    dialog
-            );
-        });
+        btnSimpan.setOnClickListener(v -> updateProfile(
+                edtNamaAnak.getText().toString(),
+                edtTanggalLahir.getText().toString(),
+                edtAlamat.getText().toString(),
+                edtNamaOrtu.getText().toString(),
+                edtNoTelp.getText().toString(),
+                dialog
+        ));
 
         btnBatal.setOnClickListener(v -> dialog.dismiss());
     }
@@ -157,6 +146,7 @@ public class ProfileFragment extends Fragment {
         EditText edt = new EditText(context);
         edt.setHint(hint);
         edt.setText(value);
+        edt.setPadding(24, 16, 24, 16);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -165,22 +155,21 @@ public class ProfileFragment extends Fragment {
         return edt;
     }
 
-    private void updateProfile(String nama, String alamat, String tgl, String ortu, String telp, AlertDialog dialog) {
-        StringRequest request = new StringRequest(Request.Method.POST, URL_UPDATE_PROFILE,
+    private void updateProfile(String nama, String tgl, String alamat, String ortu, String telp, AlertDialog dialog) {
+        StringRequest request = new StringRequest(Request.Method.POST, BASE_URL,
                 response -> {
                     Toast.makeText(getContext(), "Profil berhasil diperbarui", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
                     loadProfileData();
                 },
                 error -> Toast.makeText(getContext(), "Gagal memperbarui profil", Toast.LENGTH_SHORT).show()) {
-
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
-                params.put("id_siswa", idSiswa);
+                params.put("username", usernameOrtu);
                 params.put("nama_siswa", nama);
-                params.put("alamat", alamat);
                 params.put("tanggal_lahir", tgl);
+                params.put("alamat", alamat);
                 params.put("nama_ortu", ortu);
                 params.put("no_telp_ortu", telp);
                 return params;

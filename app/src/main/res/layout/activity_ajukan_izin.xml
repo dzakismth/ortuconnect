@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background_gradient_blue_purple"
-    tools:context="perizinan.PerizinanFragment"> <!-- Tambahkan tools:context untuk referensi Activity/Fragment -->
+    tools:context="perizinan.PerizinanFragment">
 
     <TextView
         android:id="@+id/tvHeader"
@@ -198,7 +198,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Status Card 2 (Disetujui) -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
