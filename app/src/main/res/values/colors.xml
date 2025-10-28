@@ -11,4 +11,11 @@
     <color name="text_light_green">#90EE90</color>
     <color name="red_logout">#E53935</color>
     <color name="white">#FFFFFF</color>
+    <color name="bg_light">#F5F5F5</color>
+
+    <color name="text_dark">#333333</color> <color name="text_medium">#757575</color> <color name="button_blue">@color/purple_accent</color>
+
+    <color name="status_pending_bg">#FFF59D</color> <color name="status_pending_text">#FBC02D</color>
+
+    <color name="status_approved_bg">#4CAF50</color> <color name="form_background_light">#E3F2FD</color>
 </resources>
