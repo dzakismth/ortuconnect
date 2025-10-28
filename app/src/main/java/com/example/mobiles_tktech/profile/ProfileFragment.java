@@ -8,28 +8,33 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Toast;
-
+import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.example.mobiles_tktech.MainActivitycok;
 import com.example.mobiles_tktech.R;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class ProfileFragment extends Fragment {
 
-    private TextView tvAnakNama;
-    private TextView tvAnakAlamat;
-    private TextView tvAnakTglLahir;
-    private TextView tvOrtuNama;
-    private TextView tvOrtuPhone;
+    private TextView tvAnakNama, tvAnakAlamat, tvAnakTglLahir, tvOrtuNama, tvOrtuPhone, tvProfileNameTop, tvProfileClass;
     private ImageView imgEditIcon;
+    private RequestQueue requestQueue;
+    private String idSiswa;
+
+    private static final String URL_UPDATE_PROFILE = "http://ortuconnect.atwebpages.com/api/update_profile.php";
 
     @Nullable
     @Override
@@ -41,37 +46,69 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        requestQueue = Volley.newRequestQueue(requireContext());
+
+        SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        idSiswa = prefs.getString("id_siswa", ""); // disimpan waktu login
 
         tvAnakNama = view.findViewById(R.id.detail_name_anak).findViewById(R.id.tvDetailValue);
         tvAnakAlamat = view.findViewById(R.id.detail_alamat).findViewById(R.id.tvDetailValue);
         tvAnakTglLahir = view.findViewById(R.id.detail_tanggal_lahir).findViewById(R.id.tvDetailValue);
-
         tvOrtuNama = view.findViewById(R.id.detail_name_ortu).findViewById(R.id.tvDetailValue);
         tvOrtuPhone = view.findViewById(R.id.detail_phone_ortu).findViewById(R.id.tvDetailValue);
-
+        tvProfileNameTop = view.findViewById(R.id.tvProfileNameTop);
+        tvProfileClass = view.findViewById(R.id.tvProfileClass);
         imgEditIcon = view.findViewById(R.id.imgEditProfileIcon);
 
+        ((TextView) view.findViewById(R.id.detail_name_anak).findViewById(R.id.tvDetailLabel)).setText("Nama Anak:");
+        ((TextView) view.findViewById(R.id.detail_alamat).findViewById(R.id.tvDetailLabel)).setText("Alamat:");
+        ((TextView) view.findViewById(R.id.detail_tanggal_lahir).findViewById(R.id.tvDetailLabel)).setText("Tanggal Lahir:");
+        ((TextView) view.findViewById(R.id.detail_name_ortu).findViewById(R.id.tvDetailLabel)).setText("Nama Orang Tua:");
+        ((TextView) view.findViewById(R.id.detail_phone_ortu).findViewById(R.id.tvDetailLabel)).setText("Nomor Telepon:");
 
-        loadProfileData();
 
         Button btnLogout = view.findViewById(R.id.btnKeluar);
-        if (btnLogout != null) {
-            btnLogout.setOnClickListener(v -> logoutUser());
-        }
+        btnLogout.setOnClickListener(v -> logoutUser());
 
-        if (imgEditIcon != null) {
-            imgEditIcon.setOnClickListener(v -> showEditDataDialog());
-        }
+        imgEditIcon.setOnClickListener(v -> showEditDataDialog());
+
+        loadProfileData();
     }
 
     private void loadProfileData() {
+        String username = "garnacho";
 
-        tvAnakNama.setText("");
-        tvAnakAlamat.setText("");
-        tvAnakTglLahir.setText("");
+        String url = "http://ortuconnect.atwebpages.com/api/profile.php?username=" + username;
 
-        tvOrtuNama.setText("");
-        tvOrtuPhone.setText("");
+        RequestQueue queue = Volley.newRequestQueue(getContext());
+
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+                response -> {
+                    try {
+                        if (response.getBoolean("success")) {
+                            JSONObject data = response.getJSONObject("data");
+
+                            tvAnakNama.setText(data.getString("nama_siswa"));
+                            tvAnakAlamat.setText(data.getString("alamat"));
+                            tvAnakTglLahir.setText(data.getString("tanggal_lahir"));
+                            tvOrtuNama.setText(data.getString("nama_ortu"));
+                            tvOrtuPhone.setText(data.getString("no_telp_ortu"));
+                            TextView tvProfileNameTop = getView().findViewById(R.id.tvProfileNameTop);
+                            TextView tvProfileClass = getView().findViewById(R.id.tvProfileClass);
+                            tvProfileNameTop.setText(data.getString("nama_siswa"));
+                            tvProfileClass.setText(data.getString("kelas").toUpperCase());
+
+                        } else {
+                            Toast.makeText(getContext(), "Data tidak ditemukan", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                },
+                error -> Toast.makeText(getContext(), "Gagal koneksi ke server", Toast.LENGTH_SHORT).show()
+        );
+
+        queue.add(request);
     }
 
 
@@ -82,76 +119,78 @@ public class ProfileFragment extends Fragment {
         View dialogView = inflater.inflate(R.layout.dialog_edit_data, null);
         builder.setView(dialogView);
 
+        LinearLayout llEditFieldsContainer = dialogView.findViewById(R.id.ll_edit_fields_container);
         Button btnSimpan = dialogView.findViewById(R.id.btn_simpan_dialog);
         Button btnBatal = dialogView.findViewById(R.id.btn_batal_dialog);
-        LinearLayout llEditFieldsContainer = dialogView.findViewById(R.id.ll_edit_fields_container);
-
 
         final EditText edtNamaAnak = createEditText(context, "Nama Anak", tvAnakNama.getText().toString());
         final EditText edtAlamat = createEditText(context, "Alamat", tvAnakAlamat.getText().toString());
         final EditText edtTglLahir = createEditText(context, "Tanggal Lahir", tvAnakTglLahir.getText().toString());
         final EditText edtNamaOrtu = createEditText(context, "Nama Orang Tua", tvOrtuNama.getText().toString());
-        final EditText edtNomorTelepon = createEditText(context, "Nomor Telepon", tvOrtuPhone.getText().toString());
+        final EditText edtTelepon = createEditText(context, "Nomor Telepon", tvOrtuPhone.getText().toString());
 
         llEditFieldsContainer.addView(edtNamaAnak);
         llEditFieldsContainer.addView(edtAlamat);
         llEditFieldsContainer.addView(edtTglLahir);
         llEditFieldsContainer.addView(edtNamaOrtu);
-        llEditFieldsContainer.addView(edtNomorTelepon);
+        llEditFieldsContainer.addView(edtTelepon);
 
-        final AlertDialog alertDialog = builder.create();
-        alertDialog.show();
+        AlertDialog dialog = builder.create();
+        dialog.show();
 
         btnSimpan.setOnClickListener(v -> {
-            String newNamaAnak = edtNamaAnak.getText().toString();
-            String newAlamat = edtAlamat.getText().toString();
-            String newTglLahir = edtTglLahir.getText().toString();
-            String newNamaOrtu = edtNamaOrtu.getText().toString();
-            String newTelepon = edtNomorTelepon.getText().toString();
-
-
-            tvAnakNama.setText(newNamaAnak);
-            tvAnakAlamat.setText(newAlamat);
-            tvAnakTglLahir.setText(newTglLahir);
-            tvOrtuNama.setText(newNamaOrtu);
-            tvOrtuPhone.setText(newTelepon);
-
-            Toast.makeText(context, "Data berhasil diperbarui!", Toast.LENGTH_SHORT).show();
-            alertDialog.dismiss();
+            updateProfile(
+                    edtNamaAnak.getText().toString(),
+                    edtAlamat.getText().toString(),
+                    edtTglLahir.getText().toString(),
+                    edtNamaOrtu.getText().toString(),
+                    edtTelepon.getText().toString(),
+                    dialog
+            );
         });
 
-        btnBatal.setOnClickListener(v -> {
-            Toast.makeText(context, "Edit dibatalkan.", Toast.LENGTH_SHORT).show();
-            alertDialog.dismiss();
-        });
+        btnBatal.setOnClickListener(v -> dialog.dismiss());
     }
 
-    private EditText createEditText(Context context, String hint, String initialValue) {
-        EditText editText = new EditText(context);
+    private EditText createEditText(Context context, String hint, String value) {
+        EditText edt = new EditText(context);
+        edt.setHint(hint);
+        edt.setText(value);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
+                LinearLayout.LayoutParams.WRAP_CONTENT);
         params.bottomMargin = 16;
-
-        editText.setLayoutParams(params);
-        editText.setHint(hint);
-        editText.setText(initialValue);
-        editText.setPadding(30, 30, 30, 30);
-        editText.setTextSize(14);
-        editText.setTextColor(getResources().getColor(android.R.color.black));
-
-
-        return editText;
+        edt.setLayoutParams(params);
+        return edt;
     }
 
+    private void updateProfile(String nama, String alamat, String tgl, String ortu, String telp, AlertDialog dialog) {
+        StringRequest request = new StringRequest(Request.Method.POST, URL_UPDATE_PROFILE,
+                response -> {
+                    Toast.makeText(getContext(), "Profil berhasil diperbarui", Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                    loadProfileData();
+                },
+                error -> Toast.makeText(getContext(), "Gagal memperbarui profil", Toast.LENGTH_SHORT).show()) {
+
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("id_siswa", idSiswa);
+                params.put("nama_siswa", nama);
+                params.put("alamat", alamat);
+                params.put("tanggal_lahir", tgl);
+                params.put("nama_ortu", ortu);
+                params.put("no_telp_ortu", telp);
+                return params;
+            }
+        };
+        requestQueue.add(request);
+    }
 
     private void logoutUser() {
         SharedPreferences sharedPref = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-
-        editor.clear();
-        editor.apply();
+        sharedPref.edit().clear().apply();
 
         Intent intent = new Intent(getActivity(), MainActivitycok.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
