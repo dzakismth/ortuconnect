@@ -76,7 +76,8 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadProfileData() {
-        String username = "garnacho";
+        SharedPreferences sharedPref = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        String username = sharedPref.getString("username", "");
 
         String url = "http://ortuconnect.atwebpages.com/api/profile.php?username=" + username;
 

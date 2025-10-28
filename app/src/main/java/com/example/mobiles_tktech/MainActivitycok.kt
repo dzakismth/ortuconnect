@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -29,23 +30,27 @@ import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.example.mobiles_tktech.dashboard.DashboardActivity
 import com.example.mobiles_tktech.ui.theme.MobilesTktechTheme
-import androidx.compose.ui.res.painterResource
 import org.json.JSONObject
 
+// Session Manager untuk menyimpan status login & data user
 class SessionManager(context: Context) {
     companion object {
         private const val PREF_NAME = "LoginPrefs"
         private const val KEY_IS_LOGGED_IN = "isLoggedIn"
-        private const val KEY_USER_TOKEN = "userToken"
+        private const val KEY_USERNAME = "username"
     }
 
     private val sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
     private val editor = sharedPreferences.edit()
 
-    fun createLoginSession(isLoggedIn: Boolean, token: String?) {
+    fun createLoginSession(isLoggedIn: Boolean, username: String) {
         editor.putBoolean(KEY_IS_LOGGED_IN, isLoggedIn)
-        editor.putString(KEY_USER_TOKEN, token)
+        editor.putString(KEY_USERNAME, username)
         editor.apply()
+    }
+
+    fun getUsername(): String {
+        return sharedPreferences.getString(KEY_USERNAME, "") ?: ""
     }
 
     fun isLoggedIn(): Boolean {
@@ -57,14 +62,15 @@ class SessionManager(context: Context) {
         editor.apply()
     }
 }
+
 class MainActivitycok : ComponentActivity() {
     private lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         sessionManager = SessionManager(applicationContext)
 
+        // Jika sudah login, langsung ke dashboard
         if (sessionManager.isLoggedIn()) {
             startDashboardActivity()
             return
@@ -76,7 +82,6 @@ class MainActivitycok : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-
                     LoginScreen(sessionManager)
                 }
             }
@@ -86,10 +91,9 @@ class MainActivitycok : ComponentActivity() {
     private fun startDashboardActivity() {
         val intent = Intent(this, DashboardActivity::class.java)
         startActivity(intent)
-        finish() 
+        finish()
     }
 }
-
 
 @Composable
 fun LoginScreen(sessionManager: SessionManager) {
@@ -98,6 +102,7 @@ fun LoginScreen(sessionManager: SessionManager) {
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -133,23 +138,20 @@ fun LoginScreen(sessionManager: SessionManager) {
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
-                    label = { Text("Masukan Nomor Siswa") },
+                    label = { Text("Masukkan Username") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 24.dp)
                 )
+
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Masukan Kata Sandi") },
+                    label = { Text("Masukkan Kata Sandi") },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        val image = if (passwordVisible)
-                            Icons.Filled.Visibility
-                        else
-                            Icons.Filled.VisibilityOff
+                        val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                         val description = if (passwordVisible) "Hide password" else "Show password"
-
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(imageVector = image, contentDescription = description)
                         }
@@ -158,6 +160,7 @@ fun LoginScreen(sessionManager: SessionManager) {
                         .fillMaxWidth()
                         .padding(top = 16.dp)
                 )
+
                 Button(
                     onClick = {
                         if (username.isEmpty() || password.isEmpty()) {
@@ -176,10 +179,13 @@ fun LoginScreen(sessionManager: SessionManager) {
                                     isLoading = false
                                     val success = response.optBoolean("success")
                                     val message = response.optString("message")
+
                                     if (success) {
-                                        val token = response.optString("token") ?: "default_token"
-                                        sessionManager.createLoginSession(true, token)
+                                        // Simpan session login & username
+                                        sessionManager.createLoginSession(true, username)
+
                                         Toast.makeText(context, "Login Berhasil", Toast.LENGTH_SHORT).show()
+
                                         val activity = context as? ComponentActivity
                                         val intent = Intent(context, DashboardActivity::class.java)
                                         context.startActivity(intent)
@@ -204,7 +210,11 @@ fun LoginScreen(sessionManager: SessionManager) {
                     enabled = !isLoading
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(20.dp)
+                        )
                     } else {
                         Text("Masuk")
                     }
