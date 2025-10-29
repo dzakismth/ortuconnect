@@ -1,0 +1,4 @@
+<resources>
+    <!-- Padding agar tidak tabrakan dengan gesture bar -->
+    <dimen name="navigation_bar_padding">16dp</dimen>
+</resources>

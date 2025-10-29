@@ -8,12 +8,12 @@
     android:background="@drawable/background_gradient_blue_purple"
     tools:context=".absen.AbsensiFragment">
 
-    <!-- Header -->
     <TextView
         android:id="@+id/tv_title_absensi"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Riwayat Absensi"
+        android:fontFamily="@font/fontutama"
         android:textColor="@android:color/white"
         android:textSize="20sp"
         android:textStyle="bold"
@@ -22,7 +22,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Card Putih menempel langsung -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_content"
         android:layout_width="0dp"
@@ -57,7 +56,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Pilih Bulan"
-                android:textColor="@android:color/black"
+                android:fontFamily="@font/fontutama"
+                android:textColor="@color/biru"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
@@ -75,7 +75,6 @@
                 app:layout_constraintBottom_toBottomOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_absensi_list"
             android:layout_width="match_parent"

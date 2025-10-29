@@ -18,4 +18,7 @@
     <color name="status_pending_bg">#FFF59D</color> <color name="status_pending_text">#FBC02D</color>
 
     <color name="status_approved_bg">#4CAF50</color> <color name="form_background_light">#E3F2FD</color>
+
+    <color name="ungu">#68327E</color>
+    <color name="biru">#0F53BF</color>
 </resources>

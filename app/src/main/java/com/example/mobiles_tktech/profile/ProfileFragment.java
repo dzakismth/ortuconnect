@@ -17,7 +17,8 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.example.mobiles_tktech.MainActivitycok;
+import com.example.mobiles_tktech.MainActivity;
+import com.example.mobiles_tktech.MainActivityKt;
 import com.example.mobiles_tktech.R;
 
 import org.json.JSONException;
@@ -111,7 +112,6 @@ public class ProfileFragment extends Fragment {
         Button btnSimpan = dialogView.findViewById(R.id.btn_simpan_dialog);
         Button btnBatal = dialogView.findViewById(R.id.btn_batal_dialog);
 
-        // field edit
         final EditText edtNamaAnak = createEditText(context, "Nama Anak", tvAnakNama.getText().toString());
         final EditText edtTanggalLahir = createEditText(context, "Tanggal Lahir", tvAnakTglLahir.getText().toString());
         final EditText edtAlamat = createEditText(context, "Alamat", tvAnakAlamat.getText().toString());
@@ -182,7 +182,7 @@ public class ProfileFragment extends Fragment {
         SharedPreferences sharedPref = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         sharedPref.edit().clear().apply();
 
-        Intent intent = new Intent(getActivity(), MainActivitycok.class);
+        Intent intent = new Intent(getActivity(), MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         requireActivity().finish();

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="3dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvTanggalIzin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="08 Oktober 2025"
+                android:fontFamily="@font/fontutama"
+                android:textStyle="bold"
+                android:textColor="@color/biru"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvJenisIzin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sakit"
+                android:fontFamily="@font/fontstandar"
+                android:textSize="12sp"
+                android:textColor="@color/blue_dark" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvStatusIzin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Menunggu"
+            android:fontFamily="@font/fontutama"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:background="@drawable/bg_status_menunggu"
+            android:textSize="12sp"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

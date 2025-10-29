@@ -16,7 +16,6 @@
         android:padding="12dp"
         android:gravity="center_vertical">
 
-        <!-- Icon/Waktu Kegiatan (Lingkaran Biru) -->
         <FrameLayout
             android:layout_width="40dp"
             android:layout_height="40dp"
@@ -37,31 +36,30 @@
         </FrameLayout>
 
 
-        <!-- Detail Kegiatan -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <!-- Judul Kegiatan -->
             <TextView
                 android:id="@+id/tv_kegiatan_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Rapat Persiapan Ujian Tengah Semester"
-                android:textColor="@android:color/black"
+                android:fontFamily="@font/fontutama"
+                android:textColor="@color/biru"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="2dp"/>
 
-            <!-- Detail/Lokasi Kegiatan -->
             <TextView
                 android:id="@+id/tv_kegiatan_detail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Ruang Guru Lantai 2"
-                android:textColor="@android:color/darker_gray"
+                android:fontFamily="@font/fontstandar"
+                android:textColor="@color/blue_dark"
                 android:textSize="12sp"/>
         </LinearLayout>
     </LinearLayout>

@@ -16,6 +16,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Label"
+            android:fontFamily="@font/fontstandar"
             android:textColor="#666666"
             android:textSize="14sp"
             android:textStyle="bold"/>
@@ -26,6 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1.5"
             android:text="Nilai Data"
+            android:fontFamily="@font/fontstandar"
             android:textColor="#000000"
             android:textSize="14sp"
             android:gravity="end"/>

@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background_gradient_blue_purple"
-    tools:context="perizinan.PerizinanFragment">
+    tools:context=".perizinan.PerizinanFragment">
 
     <TextView
         android:id="@+id/tvHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Perizinan"
+        android:fontFamily="@font/fontutama"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="@android:color/white"
@@ -34,12 +34,11 @@
             android:paddingHorizontal="16dp"
             android:paddingVertical="8dp">
 
-            <!-- Form Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="10dp"
                 android:layout_marginBottom="20dp"
+                app:cardCornerRadius="10dp"
                 app:cardElevation="4dp">
 
                 <LinearLayout
@@ -52,48 +51,49 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Formulir Izin"
+                        android:fontFamily="@font/fontutama"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="#333333"
+                        android:textColor="@color/biru"
                         android:layout_marginBottom="16dp"/>
 
-                    <!-- Tanggal Mulai Input -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Tanggal Mulai:"
+                        android:fontFamily="@font/fontstandar"
                         android:layout_marginBottom="4dp"/>
-
                     <EditText
                         android:id="@+id/edtTanggalMulai"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="dd/mm/yy"
+                        android:hint="yyyy-MM-dd"
+                        android:fontFamily="@font/fontstandar"
                         android:inputType="date"
                         android:padding="10dp"
                         android:background="@drawable/rounded_light_blue_bg"
-                        android:drawableEnd="@drawable/calendar"
+                        android:drawableEnd="@drawable/kalender"
                         android:drawablePadding="8dp"
                         android:focusable="false"
                         android:clickable="true"
                         android:layout_marginBottom="12dp"/>
 
-                    <!-- Tanggal Selesai Input -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Tanggal Selesai:"
+                        android:fontFamily="@font/fontstandar"
                         android:layout_marginBottom="4dp"/>
-
                     <EditText
                         android:id="@+id/edtTanggalSelesai"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="dd/mm/yy"
+                        android:hint="yyyy-MM-dd"
+                        android:fontFamily="@font/fontstandar"
                         android:inputType="date"
                         android:padding="10dp"
                         android:background="@drawable/rounded_light_blue_bg"
-                        android:drawableEnd="@drawable/calendar"
+                        android:drawableEnd="@drawable/kalender"
                         android:drawablePadding="8dp"
                         android:focusable="false"
                         android:clickable="true"
@@ -103,8 +103,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Jenis Izin:"
+                        android:fontFamily="@font/fontstandar"
                         android:layout_marginBottom="4dp"/>
-
                     <Spinner
                         android:id="@+id/spinnerJenisIzin"
                         android:layout_width="match_parent"
@@ -112,21 +112,22 @@
                         android:entries="@array/jenis_izin_array"
                         android:paddingVertical="10dp"
                         android:background="@drawable/rounded_dropdown_background"
-                        style="@style/Widget.AppCompat.Spinner.DropDown"
                         android:layout_marginBottom="12dp"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Keterangan Tambahan:"
+                        android:fontFamily="@font/fontstandar"
                         android:layout_marginBottom="4dp"/>
-
                     <EditText
                         android:id="@+id/edtKeterangan"
                         android:layout_width="match_parent"
                         android:layout_height="100dp"
                         android:gravity="top"
-                        android:hint="Tambahkan Alasan disini.."
+                        android:hint="Tambahkan alasan disini..."
+                        android:textColor="@color/biru"
+                        android:fontFamily="@font/fontstandar"
                         android:padding="10dp"
                         android:background="@drawable/rounded_light_blue_bg"
                         android:layout_marginBottom="20dp"/>
@@ -136,113 +137,32 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Kirim"
+                        android:fontFamily="@font/fontutama"
                         android:textColor="@android:color/white"
                         android:background="#0A6EDC"/>
 
                 </LinearLayout>
-
             </androidx.cardview.widget.CardView>
 
-            <!-- Status Header -->
             <TextView
+                android:id="@+id/tvStatusHeader"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Status Perizinan"
+                android:fontFamily="@font/fontutama"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@android:color/white"
                 android:layout_marginStart="4dp"
                 android:layout_marginBottom="8dp"/>
 
-            <!-- Status Card 1 (Menunggu) -->
-            <androidx.cardview.widget.CardView
+            <LinearLayout
+                android:id="@+id/containerStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="8dp"
-                android:layout_marginBottom="10dp"
-                app:cardElevation="2dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="12dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="08 Oktober 2025"
-                            android:textStyle="bold"
-                            android:textColor="#333333"/>
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Sakit"
-                            android:textSize="12sp"
-                            android:textColor="#666666"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Menunggu"
-                        android:textColor="@android:color/black"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="4dp"
-                        android:background="@drawable/rounded_hadir_badge"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="8dp"
-                android:layout_marginBottom="10dp"
-                app:cardElevation="2dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="12dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="01 Oktober 2025"
-                            android:textStyle="bold"
-                            android:textColor="#333333"/>
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Izin"
-                            android:textSize="12sp"
-                            android:textColor="#666666"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Disetujui"
-                        android:textColor="@android:color/white"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="4dp"
-                        android:background="#4CAF50"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+                android:orientation="vertical" />
 
         </LinearLayout>
-
     </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

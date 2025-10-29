@@ -5,6 +5,7 @@
     <string name="password_hint">Password</string>
     <string name="login_button">Login</string>
     <string name="pilih_bulan">Pilih Bulan</string>
+
     <string-array name="months_array">
         <item>@string/pilih_bulan</item>
         <item>Januari</item>
@@ -20,6 +21,8 @@
         <item>November</item>
         <item>Desember</item>
     </string-array>
+
+
     <string-array name="jenis_izin_array">
         <item>Sakit</item>
         <item>Izin</item>

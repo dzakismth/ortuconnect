@@ -6,13 +6,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background_gradient_blue_purple"
-    tools:context=".dashboard.HomeFragment">
+    tools:context=".dashboard.DashboardFragment">
 
     <TextView
         android:id="@+id/tv_title_beranda"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Beranda"
+        android:fontFamily="@font/fontutama"
         android:textColor="@android:color/white"
         android:textSize="24sp"
         android:textStyle="bold"
@@ -72,7 +73,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Halo, Djeki Van Basten"
-                            android:textColor="@android:color/white"
+                            android:fontFamily="@font/fontutama"
+                            android:textColor="@color/ungu"
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
@@ -81,7 +83,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Kelas: A"
-                            android:textColor="@android:color/white"
+                            android:fontFamily="@font/fontutama"
+                            android:textColor="@color/biru"
                             android:textSize="14sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -93,7 +96,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardCornerRadius="16dp"
-                app:cardBackgroundColor="#55518F"
+                app:cardBackgroundColor="#FFFFFF"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
@@ -111,15 +114,16 @@
                         android:layout_height="32dp"
                         android:src="@drawable/ic_speaker_white"
                         android:contentDescription="Speaker Icon"
-                        app:tint="@android:color/white" />
+                        app:tint="@color/ungu" />
 
                     <TextView
                         android:id="@+id/tv_jadwal_hari_ini"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Hari Kamis 9 Oktober, Memakai Baju Adat"
-                        android:textColor="@android:color/white"
-                        android:textSize="16sp"
+                        android:fontFamily="@font/fontutama"
+                        android:textColor="@color/biru"
+                        android:textSize="15dp"
                         android:layout_marginStart="12dp"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -130,7 +134,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardCornerRadius="16dp"
-                app:cardBackgroundColor="#68327E"
+                app:cardBackgroundColor="#FFFFFF"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
@@ -146,7 +150,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Kehadiran Minggu ini"
-                        android:textColor="@android:color/white"
+                        android:textColor="@color/ungu"
+                        android:fontFamily="@font/fontutama"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -155,9 +160,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="4 dari 6 hari hadir"
-                        android:textColor="@android:color/white"
+                        android:fontFamily="@font/fontutama"
+                        android:textColor="@color/biru"
                         android:textSize="14sp"
-                        android:layout_marginTop="4dp" />
+                        android:layout_marginTop="0dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -175,6 +181,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="#FFFFFF"
                     android:orientation="vertical"
                     android:padding="16dp">
 
@@ -182,7 +189,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Status Izin Terbaru"
-                        android:textColor="@android:color/white"
+                        android:fontFamily="@font/fontutama"
+                        android:textColor="@color/ungu"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -190,10 +198,11 @@
                         android:id="@+id/tv_izin_status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="0dp"
                         android:text="Izin Disetujui: 07/10/2025"
-                        android:textColor="@android:color/holo_green_light"
-                        android:textSize="14sp"
-                        android:layout_marginTop="4dp" />
+                        android:fontFamily="@font/fontutama"
+                        android:textColor="@color/biru"
+                        android:textSize="14sp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
