@@ -15,7 +15,7 @@
         android:text="Riwayat Absensi"
         android:fontFamily="@font/fontutama"
         android:textColor="@android:color/white"
-        android:textSize="20sp"
+        android:textSize="24sp"
         android:textStyle="bold"
         android:layout_marginTop="24dp"
         android:layout_marginStart="24dp"

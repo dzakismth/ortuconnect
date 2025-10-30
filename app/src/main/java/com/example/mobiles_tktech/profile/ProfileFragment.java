@@ -18,7 +18,6 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.mobiles_tktech.MainActivity;
-import com.example.mobiles_tktech.MainActivityKt;
 import com.example.mobiles_tktech.R;
 
 import org.json.JSONException;
@@ -29,10 +28,9 @@ import java.util.Map;
 
 public class ProfileFragment extends Fragment {
 
-    private TextView tvAnakNama, tvAnakAlamat, tvAnakTglLahir, tvOrtuNama, tvOrtuPhone, tvProfileNameTop, tvProfileClass;
-    private ImageView imgEditIcon;
+    private TextView tvAnakNama, tvAnakAlamat, tvAnakTglLahir, tvGender, tvOrtuNama, tvOrtuPhone, tvProfileNameTop, tvProfileClass;
+    private ImageView imgEditIcon, imgProfilePicture;
     private RequestQueue requestQueue;
-
     private static final String BASE_URL = "http://ortuconnect.atwebpages.com/api/profile.php";
     private String usernameOrtu = "";
 
@@ -45,24 +43,28 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         requestQueue = Volley.newRequestQueue(requireContext());
 
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         usernameOrtu = prefs.getString("username", "");
 
+        // 🔹 Bind Views
         tvAnakNama = view.findViewById(R.id.detail_name_anak).findViewById(R.id.tvDetailValue);
         tvAnakAlamat = view.findViewById(R.id.detail_alamat).findViewById(R.id.tvDetailValue);
         tvAnakTglLahir = view.findViewById(R.id.detail_tanggal_lahir).findViewById(R.id.tvDetailValue);
+        tvGender = view.findViewById(R.id.gender).findViewById(R.id.tvDetailValue);
         tvOrtuNama = view.findViewById(R.id.detail_name_ortu).findViewById(R.id.tvDetailValue);
         tvOrtuPhone = view.findViewById(R.id.detail_phone_ortu).findViewById(R.id.tvDetailValue);
         tvProfileNameTop = view.findViewById(R.id.tvProfileNameTop);
         tvProfileClass = view.findViewById(R.id.tvProfileClass);
         imgEditIcon = view.findViewById(R.id.imgEditProfileIcon);
+        imgProfilePicture = view.findViewById(R.id.img_profile_large); // Tambahkan di layout XML kamu
 
+        // 🔹 Label setup
         ((TextView) view.findViewById(R.id.detail_name_anak).findViewById(R.id.tvDetailLabel)).setText("Nama Anak:");
         ((TextView) view.findViewById(R.id.detail_alamat).findViewById(R.id.tvDetailLabel)).setText("Alamat:");
         ((TextView) view.findViewById(R.id.detail_tanggal_lahir).findViewById(R.id.tvDetailLabel)).setText("Tanggal Lahir:");
+        ((TextView) view.findViewById(R.id.gender).findViewById(R.id.tvDetailLabel)).setText("Gender:");
         ((TextView) view.findViewById(R.id.detail_name_ortu).findViewById(R.id.tvDetailLabel)).setText("Nama Orang Tua:");
         ((TextView) view.findViewById(R.id.detail_phone_ortu).findViewById(R.id.tvDetailLabel)).setText("Nomor Telepon:");
 
@@ -81,18 +83,30 @@ public class ProfileFragment extends Fragment {
                         if (response.getBoolean("success")) {
                             JSONObject data = response.getJSONObject("data");
 
-                            tvAnakNama.setText(data.getString("nama_siswa"));
-                            tvAnakAlamat.setText(data.getString("alamat"));
-                            tvAnakTglLahir.setText(data.getString("tanggal_lahir"));
-                            tvOrtuNama.setText(data.getString("nama_ortu"));
-                            tvOrtuPhone.setText(data.getString("no_telp_ortu"));
-                            tvProfileNameTop.setText(data.getString("nama_siswa"));
-                            tvProfileClass.setText(data.getString("kelas").toUpperCase());
+                            String nama = data.getString("nama_siswa");
+                            String alamat = data.getString("alamat");
+                            String tglLahir = data.getString("tanggal_lahir");
+                            String gender = data.getString("gender");
+                            String ortu = data.getString("nama_ortu");
+                            String telp = data.getString("no_telp_ortu");
+                            String kelas = data.getString("kelas");
+
+                            tvAnakNama.setText(nama);
+                            tvAnakAlamat.setText(alamat);
+                            tvAnakTglLahir.setText(tglLahir);
+                            tvGender.setText(gender);
+                            tvOrtuNama.setText(ortu);
+                            tvOrtuPhone.setText(telp);
+                            tvProfileNameTop.setText(nama);
+                            tvProfileClass.setText(kelas.toUpperCase());
+
+                            // 🔹 Update icon berdasarkan gender
+                            updateProfileIcon(gender);
                         } else {
                             Toast.makeText(getContext(), "Data tidak ditemukan", Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
-                        e.printStackTrace();
+                        Toast.makeText(getContext(), "Kesalahan parsing data", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> Toast.makeText(getContext(), "Gagal koneksi ke server", Toast.LENGTH_SHORT).show()
@@ -101,11 +115,20 @@ public class ProfileFragment extends Fragment {
         requestQueue.add(request);
     }
 
+    private void updateProfileIcon(String gender) {
+        if (imgProfilePicture == null) return;
+
+        if (gender.equalsIgnoreCase("perempuan") || gender.equalsIgnoreCase("Perempuan")) {
+            imgProfilePicture.setImageResource(R.drawable.icon_cewe); // 🔹 pastikan kamu punya ic_girl.png di drawable
+        } else {
+            imgProfilePicture.setImageResource(R.drawable.icon_cowo); // 🔹 pastikan kamu punya ic_boy.png di drawable
+        }
+    }
+
     private void showEditDataDialog() {
         Context context = requireContext();
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View dialogView = inflater.inflate(R.layout.dialog_edit_data, null);
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_data, null);
         builder.setView(dialogView);
 
         LinearLayout llContainer = dialogView.findViewById(R.id.ll_edit_fields_container);
@@ -113,8 +136,9 @@ public class ProfileFragment extends Fragment {
         Button btnBatal = dialogView.findViewById(R.id.btn_batal_dialog);
 
         final EditText edtNamaAnak = createEditText(context, "Nama Anak", tvAnakNama.getText().toString());
-        final EditText edtTanggalLahir = createEditText(context, "Tanggal Lahir", tvAnakTglLahir.getText().toString());
+        final EditText edtTanggalLahir = createEditText(context, "Tanggal Lahir (YYYY-MM-DD)", tvAnakTglLahir.getText().toString());
         final EditText edtAlamat = createEditText(context, "Alamat", tvAnakAlamat.getText().toString());
+        final EditText edtGender = createEditText(context, "Gender", tvGender.getText().toString());
         final EditText edtNamaOrtu = createEditText(context, "Nama Orang Tua", tvOrtuNama.getText().toString());
         final EditText edtNoTelp = createEditText(context, "Nomor Telepon", tvOrtuPhone.getText().toString());
         final EditText edtKelas = createEditText(context, "Kelas", tvProfileClass.getText().toString());
@@ -123,6 +147,7 @@ public class ProfileFragment extends Fragment {
         llContainer.addView(edtNamaAnak);
         llContainer.addView(edtTanggalLahir);
         llContainer.addView(edtAlamat);
+        llContainer.addView(edtGender);
         llContainer.addView(edtNamaOrtu);
         llContainer.addView(edtNoTelp);
         llContainer.addView(edtKelas);
@@ -130,14 +155,27 @@ public class ProfileFragment extends Fragment {
         AlertDialog dialog = builder.create();
         dialog.show();
 
-        btnSimpan.setOnClickListener(v -> updateProfile(
-                edtNamaAnak.getText().toString(),
-                edtTanggalLahir.getText().toString(),
-                edtAlamat.getText().toString(),
-                edtNamaOrtu.getText().toString(),
-                edtNoTelp.getText().toString(),
-                dialog
-        ));
+        btnSimpan.setOnClickListener(v -> {
+            if (edtNamaAnak.getText().toString().isEmpty() ||
+                    edtTanggalLahir.getText().toString().isEmpty() ||
+                    edtAlamat.getText().toString().isEmpty() ||
+                    edtGender.getText().toString().isEmpty() ||
+                    edtNamaOrtu.getText().toString().isEmpty() ||
+                    edtNoTelp.getText().toString().isEmpty()) {
+                Toast.makeText(context, "Semua field harus diisi!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            updateProfile(
+                    edtNamaAnak.getText().toString(),
+                    edtTanggalLahir.getText().toString(),
+                    edtAlamat.getText().toString(),
+                    edtGender.getText().toString(),
+                    edtNamaOrtu.getText().toString(),
+                    edtNoTelp.getText().toString(),
+                    dialog
+            );
+        });
 
         btnBatal.setOnClickListener(v -> dialog.dismiss());
     }
@@ -146,16 +184,17 @@ public class ProfileFragment extends Fragment {
         EditText edt = new EditText(context);
         edt.setHint(hint);
         edt.setText(value);
-        edt.setPadding(24, 16, 24, 16);
+        edt.setPadding(32, 20, 32, 20);
+        edt.setBackgroundResource(android.R.drawable.edit_text);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.bottomMargin = 16;
+        params.bottomMargin = 20;
         edt.setLayoutParams(params);
         return edt;
     }
 
-    private void updateProfile(String nama, String tgl, String alamat, String ortu, String telp, AlertDialog dialog) {
+    private void updateProfile(String nama, String tgl, String alamat, String gender, String ortu, String telp, AlertDialog dialog) {
         StringRequest request = new StringRequest(Request.Method.POST, BASE_URL,
                 response -> {
                     Toast.makeText(getContext(), "Profil berhasil diperbarui", Toast.LENGTH_SHORT).show();
@@ -170,6 +209,7 @@ public class ProfileFragment extends Fragment {
                 params.put("nama_siswa", nama);
                 params.put("tanggal_lahir", tgl);
                 params.put("alamat", alamat);
+                params.put("gender", gender);
                 params.put("nama_ortu", ortu);
                 params.put("no_telp_ortu", telp);
                 return params;
