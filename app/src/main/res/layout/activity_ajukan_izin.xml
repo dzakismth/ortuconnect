@@ -34,6 +34,7 @@
             android:paddingHorizontal="16dp"
             android:paddingVertical="8dp">
 
+            <!-- KARTU FORMULIR IZIN -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -139,10 +140,31 @@
                         android:text="Kirim"
                         android:fontFamily="@font/fontutama"
                         android:textColor="@android:color/white"
-                        android:background="@color/biru"/>
+                        android:backgroundTint="@color/biru"
+                        app:cornerRadius="8dp"
+                        android:paddingVertical="12dp"/>
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
+
+            <!-- AREA FILTER BULAN -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Filter Bulan:"
+                android:fontFamily="@font/fontstandar"
+                android:textColor="@android:color/white"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="4dp"/>
+            <Spinner
+                android:id="@+id/spinnerBulanFilter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:entries="@array/months_array"
+                android:paddingVertical="10dp"
+                android:background="@drawable/rounded_dialog_background"
+                android:layout_marginBottom="16dp"/>
+            <!-- END AREA FILTER BULAN -->
 
             <TextView
                 android:id="@+id/tvStatusHeader"
