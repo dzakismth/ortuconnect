@@ -48,7 +48,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // FUNGSI BARU: Validasi apakah akun masih ada di database
     private fun validateSessionAndLogin() {
         val username = sessionManager.username ?: ""
 
