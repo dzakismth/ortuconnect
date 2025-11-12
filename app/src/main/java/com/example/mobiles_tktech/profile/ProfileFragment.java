@@ -12,6 +12,8 @@ import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -19,6 +21,7 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.mobiles_tktech.MainActivity;
 import com.example.mobiles_tktech.R;
+import com.example.mobiles_tktech.dashboard.DashboardFragment;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,6 +40,7 @@ public class ProfileFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        // 🔹 Ubah layout jadi fragment_profile.xml (bukan activity_profile)
         return inflater.inflate(R.layout.activity_profile, container, false);
     }
 
@@ -58,7 +62,8 @@ public class ProfileFragment extends Fragment {
         tvProfileNameTop = view.findViewById(R.id.tvProfileNameTop);
         tvProfileClass = view.findViewById(R.id.tvProfileClass);
         imgEditIcon = view.findViewById(R.id.imgEditProfileIcon);
-        imgProfilePicture = view.findViewById(R.id.img_profile_large); // Tambahkan di layout XML kamu
+        imgProfilePicture = view.findViewById(R.id.img_profile_large);
+        ImageButton btnBackHeader = view.findViewById(R.id.btn_back_header); // 🔙 Tambahan tombol kembali
 
         // 🔹 Label setup
         ((TextView) view.findViewById(R.id.detail_name_anak).findViewById(R.id.tvDetailLabel)).setText("Nama Anak:");
@@ -68,10 +73,23 @@ public class ProfileFragment extends Fragment {
         ((TextView) view.findViewById(R.id.detail_name_ortu).findViewById(R.id.tvDetailLabel)).setText("Nama Orang Tua:");
         ((TextView) view.findViewById(R.id.detail_phone_ortu).findViewById(R.id.tvDetailLabel)).setText("Nomor Telepon:");
 
+        // 🔹 Tombol aksi
         view.findViewById(R.id.btnKeluar).setOnClickListener(v -> logoutUser());
         imgEditIcon.setOnClickListener(v -> showEditDataDialog());
+        btnBackHeader.setOnClickListener(v -> goBackToDashboard()); // 🔙 Tambahkan fungsi klik tombol kembali
 
+        // 🔹 Load data profil
         loadProfileData();
+    }
+
+    // 🔙 Fungsi kembali ke DashboardFragment
+    private void goBackToDashboard() {
+        FragmentTransaction transaction = requireActivity()
+                .getSupportFragmentManager()
+                .beginTransaction();
+        transaction.replace(R.id.fragment_container, new DashboardFragment());
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 
     private void loadProfileData() {
@@ -118,10 +136,10 @@ public class ProfileFragment extends Fragment {
     private void updateProfileIcon(String gender) {
         if (imgProfilePicture == null) return;
 
-        if (gender.equalsIgnoreCase("perempuan") || gender.equalsIgnoreCase("Perempuan")) {
-            imgProfilePicture.setImageResource(R.drawable.icon_cewe); // 🔹 pastikan kamu punya ic_girl.png di drawable
+        if (gender.equalsIgnoreCase("perempuan")) {
+            imgProfilePicture.setImageResource(R.drawable.icon_cewe);
         } else {
-            imgProfilePicture.setImageResource(R.drawable.icon_cowo); // 🔹 pastikan kamu punya ic_boy.png di drawable
+            imgProfilePicture.setImageResource(R.drawable.icon_cowo);
         }
     }
 

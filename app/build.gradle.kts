@@ -5,6 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.mobiles_tktech"
+    // Saya sarankan compileSdk dinaikkan ke 34 (Android 14) atau 35 (Android 15 beta)
     compileSdk = 36
 
     defaultConfig {
@@ -57,9 +58,17 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
-    // **DITAMBAHKAN: Diperlukan untuk komponen CardView pada layout XML**
+    // **DITAMBAHKAN: Diperlukan untuk OnBackPressedDispatcher**
+    // Ini memberikan akses ke requireActivity().getOnBackPressedDispatcher()
+    implementation("androidx.activity:activity-ktx:1.9.0")
+
+    // **KOREKSI: Mengganti salah satu cardview yang terduplikasi**
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("com.android.volley:volley:1.2.1")
+
+    // --- Navigation Component (Sudah Benar) ---
+    implementation("androidx.navigation:navigation-fragment:2.7.5")
+    implementation("androidx.navigation:navigation-ui:2.7.5")
 
     // --- Testing Dependencies ---
     testImplementation("junit:junit:4.13.2")
@@ -87,10 +96,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.5")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
     implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.cardview:cardview:1.0.0")
-// Versi bisa lebih baru
-    implementation("com.google.android.material:material:1.12.0")
-// Versi bisa lebih baru
+    // implementation("androidx.cardview:cardview:1.0.0") // Dihapus karena duplikat
+    // implementation("com.google.android.material:material:1.12.0") // Dihapus karena duplikat
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
