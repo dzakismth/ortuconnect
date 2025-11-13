@@ -26,6 +26,7 @@ public class NavigasiCard extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_container);
+
         BottomNavigationView bottomNav = findViewById(R.id.bottom_nav_card);
         ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, insets) -> {
             int bottomInset = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
@@ -35,12 +36,14 @@ public class NavigasiCard extends AppCompatActivity {
 
         fragmentManager = getSupportFragmentManager();
 
+        // 🔹 Inisialisasi semua fragment
         dashboardFragment = new DashboardFragment();
         absensiFragment = new AbsensiFragment();
         kalenderFragment = new KalenderFragment();
         perizinanFragment = new PerizinanFragment();
         profileFragment = new ProfileFragment();
 
+        // 🔹 Tambahkan ke fragment manager, hanya dashboard yang ditampilkan
         fragmentManager.beginTransaction()
                 .add(R.id.fragment_container, profileFragment, "profile").hide(profileFragment)
                 .add(R.id.fragment_container, perizinanFragment, "perizinan").hide(perizinanFragment)
@@ -51,35 +54,40 @@ public class NavigasiCard extends AppCompatActivity {
 
         activeFragment = dashboardFragment;
 
+        // 🔹 Listener navigasi
+        bottomNav.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
 
-        bottomNav.setOnItemSelectedListener(navListener);
+            Fragment newFragment = null;
+            if (itemId == R.id.nav_beranda) {
+                newFragment = dashboardFragment;
+            } else if (itemId == R.id.nav_absensi) {
+                newFragment = absensiFragment;
+            } else if (itemId == R.id.nav_kalender) {
+                newFragment = kalenderFragment;
+            } else if (itemId == R.id.nav_perizinan) {
+                newFragment = perizinanFragment;
+            } else if (itemId == R.id.nav_profile) {
+                newFragment = profileFragment;
+            }
+
+            if (newFragment != null && newFragment != activeFragment) {
+                fragmentManager.beginTransaction()
+                        .hide(activeFragment)
+                        .show(newFragment)
+                        .commit();
+                activeFragment = newFragment;
+            }
+
+            return true;
+        });
+
         bottomNav.setSelectedItemId(R.id.nav_beranda);
     }
 
-    private final BottomNavigationView.OnItemSelectedListener navListener =
-            item -> {
-                Fragment selectedFragment = null;
-                int itemId = item.getItemId();
-
-                if (itemId == R.id.nav_beranda) {
-                    selectedFragment = new DashboardFragment();
-                } else if (itemId == R.id.nav_absensi) {
-                    selectedFragment = new AbsensiFragment();
-                } else if (itemId == R.id.nav_kalender) {
-                    selectedFragment = new KalenderFragment();
-                } else if (itemId == R.id.nav_perizinan) {
-                    selectedFragment = new PerizinanFragment();
-                } else if (itemId == R.id.nav_profile) {
-                    selectedFragment = new ProfileFragment();
-                }
-
-                if (selectedFragment != null) {
-                    getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.fragment_container, selectedFragment)
-                            .commit();
-                }
-
-                return true;
-            };
+    // 🔹 Tambahkan method agar fragment lain bisa balik ke Dashboard
+    public void navigateToDashboard() {
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav_card);
+        bottomNav.setSelectedItemId(R.id.nav_beranda);
     }
-
+}

@@ -47,6 +47,7 @@
             app:layout_constraintBottom_toBottomOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <!-- Isi Halaman -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -60,7 +61,7 @@
             android:paddingHorizontal="16dp"
             android:paddingVertical="8dp">
 
-            <!-- KARTU FORMULIR IZIN -->
+            <!-- Kartu Formulir Izin -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -84,12 +85,14 @@
                         android:textColor="@color/biru"
                         android:layout_marginBottom="16dp"/>
 
+                    <!-- Tanggal Mulai -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Tanggal Mulai:"
                         android:fontFamily="@font/fontstandar"
                         android:layout_marginBottom="4dp"/>
+
                     <EditText
                         android:id="@+id/edtTanggalMulai"
                         android:layout_width="match_parent"
@@ -98,7 +101,7 @@
                         android:fontFamily="@font/fontstandar"
                         android:inputType="date"
                         android:padding="10dp"
-                        android:background="@drawable/rounded_light_blue_bg"
+                        android:background="@drawable/rounded_input_bg"
                         android:drawableEnd="@drawable/kalender"
                         android:drawablePadding="8dp"
                         android:focusable="false"
@@ -106,12 +109,14 @@
                         android:layout_marginBottom="12dp"
                         tools:ignore="Autofill" />
 
+                    <!-- Tanggal Selesai -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Tanggal Selesai:"
                         android:fontFamily="@font/fontstandar"
                         android:layout_marginBottom="4dp"/>
+
                     <EditText
                         android:id="@+id/edtTanggalSelesai"
                         android:layout_width="match_parent"
@@ -120,7 +125,7 @@
                         android:fontFamily="@font/fontstandar"
                         android:inputType="date"
                         android:padding="10dp"
-                        android:background="@drawable/rounded_light_blue_bg"
+                        android:background="@drawable/rounded_input_bg"
                         android:drawableEnd="@drawable/kalender"
                         android:drawablePadding="8dp"
                         android:focusable="false"
@@ -128,27 +133,31 @@
                         android:layout_marginBottom="12dp"
                         tools:ignore="Autofill" />
 
+                    <!-- Jenis Izin -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Jenis Izin:"
                         android:fontFamily="@font/fontstandar"
                         android:layout_marginBottom="4dp"/>
+
                     <Spinner
                         android:id="@+id/spinnerJenisIzin"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:entries="@array/jenis_izin_array"
                         android:paddingVertical="10dp"
-                        android:background="@drawable/rounded_dropdown_background"
+                        android:background="@drawable/rounded_input_bg"
                         android:layout_marginBottom="12dp"/>
 
+                    <!-- Keterangan Tambahan -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Keterangan Tambahan:"
                         android:fontFamily="@font/fontstandar"
                         android:layout_marginBottom="4dp"/>
+
                     <EditText
                         android:id="@+id/edtKeterangan"
                         android:layout_width="match_parent"
@@ -158,11 +167,12 @@
                         android:textColor="@color/biru"
                         android:fontFamily="@font/fontstandar"
                         android:padding="10dp"
-                        android:background="@drawable/rounded_light_blue_bg"
+                        android:background="@drawable/rounded_input_bg"
                         android:layout_marginBottom="20dp"
                         tools:ignore="Autofill"
                         android:inputType="textMultiLine"/>
 
+                    <!-- Tombol Kirim -->
                     <Button
                         android:id="@+id/btnKirimIzin"
                         android:layout_width="match_parent"
@@ -173,11 +183,10 @@
                         android:backgroundTint="@color/biru"
                         app:cornerRadius="8dp"
                         android:paddingVertical="12dp"/>
-
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- AREA FILTER BULAN -->
+            <!-- Filter Bulan -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -186,16 +195,17 @@
                 android:textColor="@android:color/white"
                 android:layout_marginStart="4dp"
                 android:layout_marginBottom="4dp"/>
+
             <Spinner
                 android:id="@+id/spinnerBulanFilter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:entries="@array/months_array"
                 android:paddingVertical="10dp"
-                android:background="@drawable/rounded_dropdown_background"
+                android:background="@drawable/rounded_input_bg"
                 android:layout_marginBottom="16dp"/>
-            <!-- END AREA FILTER BULAN -->
 
+            <!-- Status Perizinan -->
             <TextView
                 android:id="@+id/tvStatusHeader"
                 android:layout_width="wrap_content"
@@ -208,7 +218,7 @@
                 android:layout_marginStart="4dp"
                 android:layout_marginBottom="8dp"/>
 
-            <!-- Placeholder untuk Daftar Status Izin (Biasanya RecyclerView/LinearLayout diisi secara dinamis) -->
+            <!-- Container daftar status -->
             <LinearLayout
                 android:id="@+id/containerStatus"
                 android:layout_width="match_parent"

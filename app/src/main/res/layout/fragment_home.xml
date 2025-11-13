@@ -8,6 +8,7 @@
     android:background="@drawable/background_gradient_blue_purple"
     tools:context=".dashboard.DashboardFragment">
 
+    <!-- Judul -->
     <TextView
         android:id="@+id/tv_title_beranda"
         android:layout_width="wrap_content"
@@ -22,6 +23,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Scroll Container -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -39,6 +41,7 @@
             android:paddingTop="24dp"
             android:paddingBottom="100dp">
 
+            <!-- CARD PROFIL -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_profil"
                 android:layout_width="match_parent"
@@ -72,7 +75,7 @@
                             android:id="@+id/tv_nama_siswa"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Halo, Djeki Van Basten"
+                            android:text=""
                             android:fontFamily="@font/fontutama"
                             android:textColor="@color/ungu"
                             android:textSize="18sp"
@@ -82,7 +85,7 @@
                             android:id="@+id/tv_kelas"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Kelas: A"
+                            android:text=""
                             android:fontFamily="@font/fontutama"
                             android:textColor="@color/biru"
                             android:textSize="14sp" />
@@ -90,6 +93,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- CARD JADWAL -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_jadwal"
                 android:layout_width="match_parent"
@@ -123,11 +127,12 @@
                         android:text="Hari Kamis 9 Oktober, Memakai Baju Adat"
                         android:fontFamily="@font/fontutama"
                         android:textColor="@color/biru"
-                        android:textSize="15dp"
+                        android:textSize="15sp"
                         android:layout_marginStart="12dp"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- CARD KEHADIRAN -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_kehadiran"
                 android:layout_width="match_parent"
@@ -167,6 +172,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- CARD STATUS IZIN -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_status_izin"
                 android:layout_width="match_parent"
@@ -208,4 +214,5 @@
 
         </LinearLayout>
     </ScrollView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

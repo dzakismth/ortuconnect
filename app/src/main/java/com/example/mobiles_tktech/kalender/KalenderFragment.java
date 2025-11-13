@@ -9,28 +9,27 @@ import android.widget.ImageButton;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 
 import com.example.mobiles_tktech.R;
-import com.example.mobiles_tktech.dashboard.DashboardFragment;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class KalenderFragment extends Fragment {
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.activity_kalender, container, false);
+        View view = inflater.inflate(R.layout.fragment_kalender, container, false);
 
-        // Tombol kembali
         ImageButton btnBack = view.findViewById(R.id.btn_back_header);
         btnBack.setOnClickListener(v -> {
-            // Ganti fragment ke DashboardFragment
-            FragmentTransaction transaction = requireActivity()
-                    .getSupportFragmentManager()
-                    .beginTransaction();
-            transaction.replace(R.id.fragment_container, new DashboardFragment());
-            transaction.addToBackStack(null);
-            transaction.commit();
+            // Pastikan activity adalah NavigasiCard
+            if (getActivity() instanceof com.example.mobiles_tktech.navigasi.NavigasiCard) {
+                ((com.example.mobiles_tktech.navigasi.NavigasiCard) getActivity()).navigateToDashboard();
+
+                // Update icon bottom navigation agar kembali ke Beranda
+                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav_card);
+                bottomNav.setSelectedItemId(R.id.nav_beranda);
+            }
         });
 
         return view;

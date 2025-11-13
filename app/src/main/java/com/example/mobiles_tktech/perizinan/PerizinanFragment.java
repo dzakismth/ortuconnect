@@ -5,21 +5,19 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.view.*;
 import android.widget.*;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.mobiles_tktech.R;
-import com.example.mobiles_tktech.dashboard.DashboardFragment;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -31,21 +29,19 @@ import java.util.*;
 public class PerizinanFragment extends Fragment {
 
     private EditText edtTanggalMulai, edtTanggalSelesai, edtKeterangan;
-    private Spinner spinnerJenis;
-    private Spinner spinnerBulanFilter;
+    private Spinner spinnerJenis, spinnerBulanFilter;
     private Button btnKirim;
     private LinearLayout containerStatus;
     private RequestQueue requestQueue;
     private Calendar calendar = Calendar.getInstance();
 
     private static final String URL_IZIN = "http://ortuconnect.atwebpages.com/api/perizinan.php";
-    private String selectedMonthFilter = "Semua Bulan"; // Default filter
+    private String selectedMonthFilter = "Semua Bulan";
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // Pastikan layout sesuai
-        return inflater.inflate(R.layout.activity_ajukan_izin, container, false);
+        return inflater.inflate(R.layout.fragment_perizinan, container, false);
     }
 
     @Override
@@ -62,16 +58,17 @@ public class PerizinanFragment extends Fragment {
         containerStatus = view.findViewById(R.id.containerStatus);
         spinnerBulanFilter = view.findViewById(R.id.spinnerBulanFilter);
 
-        // 🔙 Tombol kembali ke Dashboard
+        // 🔙 Tombol kembali ke Dashboard lewat NavigasiCard (bukan membuat fragment baru)
         ImageButton btnBack = view.findViewById(R.id.btn_back_header);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> {
-                FragmentTransaction transaction = requireActivity()
-                        .getSupportFragmentManager()
-                        .beginTransaction();
-                transaction.replace(R.id.fragment_container, new DashboardFragment());
-                transaction.addToBackStack(null);
-                transaction.commit();
+                if (getActivity() instanceof com.example.mobiles_tktech.navigasi.NavigasiCard) {
+                    ((com.example.mobiles_tktech.navigasi.NavigasiCard) getActivity()).navigateToDashboard();
+
+                    // update icon bottom nav ke Beranda
+                    BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav_card);
+                    bottomNav.setSelectedItemId(R.id.nav_beranda);
+                }
             });
         }
 
@@ -85,7 +82,6 @@ public class PerizinanFragment extends Fragment {
 
     private void setupBulanFilter() {
         if (spinnerBulanFilter == null) return;
-
         spinnerBulanFilter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -94,8 +90,7 @@ public class PerizinanFragment extends Fragment {
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
+            public void onNothingSelected(AdapterView<?> parent) { }
         });
     }
 
@@ -176,7 +171,6 @@ public class PerizinanFragment extends Fragment {
     private void loadRiwayatIzin() {
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         String username = prefs.getString("username", "");
-
         if (username.isEmpty()) return;
 
         String url = URL_IZIN + "?username=" + username;
@@ -189,23 +183,15 @@ public class PerizinanFragment extends Fragment {
                             JSONArray data = response.getJSONArray("data");
                             tampilkanStatus(data, selectedMonthFilter);
                         } else {
-                            containerStatus.removeAllViews();
-                            TextView tvNoData = new TextView(getContext());
-                            tvNoData.setText("Tidak ada riwayat perizinan.");
-                            tvNoData.setPadding(0, 32, 0, 0);
-                            containerStatus.addView(tvNoData);
+                            tampilkanKosong("Tidak ada riwayat perizinan.");
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 },
                 error -> {
-                    if (isAdded()) {
-                        Toast.makeText(getContext(), "Gagal memuat riwayat izin.", Toast.LENGTH_SHORT).show();
-                        containerStatus.removeAllViews();
-                    }
-                }
-        );
+                    if (isAdded()) tampilkanKosong("Gagal memuat riwayat izin.");
+                });
         requestQueue.add(request);
     }
 
@@ -220,15 +206,15 @@ public class PerizinanFragment extends Fragment {
         for (int i = 0; i < rawData.length(); i++) {
             JSONObject izin = rawData.getJSONObject(i);
             String tglMulai = izin.optString("tanggal_mulai", "");
-
             boolean passFilter = true;
+
             if (!filterBulan.equals("Semua Bulan") && !tglMulai.isEmpty()) {
                 try {
                     Date dateMulai = sdfParse.parse(tglMulai);
                     String bulanData = sdfBulan.format(dateMulai);
-                    if (!bulanData.equalsIgnoreCase(filterBulan)) passFilter = false;
+                    passFilter = bulanData.equalsIgnoreCase(filterBulan);
                 } catch (Exception e) {
-                    Log.e("Perizinan", "Gagal memparsing tanggal: " + tglMulai, e);
+                    Log.e("Perizinan", "Gagal parsing tanggal: " + tglMulai, e);
                     passFilter = false;
                 }
             }
@@ -240,14 +226,7 @@ public class PerizinanFragment extends Fragment {
                 TextView tvStatus = card.findViewById(R.id.tvStatusIzin);
 
                 String tglSelesai = izin.optString("tanggal_selesai", "");
-                String displayTglMulai = tglMulai.isEmpty() ? "-" : tglMulai;
-
-                if (tglSelesai.isEmpty() || tglSelesai.equals(tglMulai)) {
-                    tvTanggal.setText(displayTglMulai);
-                } else {
-                    tvTanggal.setText(displayTglMulai + " - " + tglSelesai);
-                }
-
+                tvTanggal.setText(tglSelesai.isEmpty() ? tglMulai : tglMulai + " - " + tglSelesai);
                 tvJenis.setText(izin.optString("jenis_izin", "-"));
                 String status = izin.optString("status", "Menunggu");
 
@@ -267,11 +246,14 @@ public class PerizinanFragment extends Fragment {
             }
         }
 
-        if (containerStatus.getChildCount() == 0) {
-            TextView tvNoData = new TextView(getContext());
-            tvNoData.setText("Tidak ada riwayat perizinan pada bulan " + filterBulan + ".");
-            tvNoData.setPadding(0, 32, 0, 0);
-            containerStatus.addView(tvNoData);
-        }
+        if (containerStatus.getChildCount() == 0) tampilkanKosong("Tidak ada riwayat perizinan bulan " + filterBulan + ".");
+    }
+
+    private void tampilkanKosong(String pesan) {
+        containerStatus.removeAllViews();
+        TextView tv = new TextView(getContext());
+        tv.setText(pesan);
+        tv.setPadding(0, 32, 0, 0);
+        containerStatus.addView(tv);
     }
 }
