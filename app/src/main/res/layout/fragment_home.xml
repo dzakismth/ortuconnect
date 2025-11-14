@@ -58,13 +58,16 @@
                     android:padding="16dp"
                     android:gravity="center_vertical">
 
+                    <!-- Foto Profil -->
                     <ImageView
+                        android:id="@+id/imgProfile"
                         android:layout_width="60dp"
                         android:layout_height="60dp"
                         android:src="@drawable/icon_cowo"
                         android:background="@drawable/rounded_image_white_border"
                         android:contentDescription="Foto Profil" />
 
+                    <!-- Nama & Kelas -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -75,7 +78,7 @@
                             android:id="@+id/tv_nama_siswa"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text=""
+                            android:text="Nama Siswa"
                             android:fontFamily="@font/fontutama"
                             android:textColor="@color/ungu"
                             android:textSize="18sp"
@@ -85,7 +88,7 @@
                             android:id="@+id/tv_kelas"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text=""
+                            android:text="Kelas"
                             android:fontFamily="@font/fontutama"
                             android:textColor="@color/biru"
                             android:textSize="14sp" />
@@ -124,7 +127,7 @@
                         android:id="@+id/tv_jadwal_hari_ini"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Hari Kamis 9 Oktober, Memakai Baju Adat"
+                        android:text="Hari Kamis, Memakai Baju Adat"
                         android:fontFamily="@font/fontutama"
                         android:textColor="@color/biru"
                         android:textSize="15sp"
@@ -154,7 +157,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Kehadiran Minggu ini"
+                        android:text="Kehadiran Minggu Ini"
                         android:textColor="@color/ungu"
                         android:fontFamily="@font/fontutama"
                         android:textSize="18sp"
