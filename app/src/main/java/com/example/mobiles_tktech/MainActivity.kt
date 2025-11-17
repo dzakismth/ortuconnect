@@ -6,7 +6,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -27,6 +26,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.android.volley.Request
+import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import org.json.JSONObject
@@ -45,91 +45,68 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         sessionManager = SessionManager(applicationContext)
 
-        // PERUBAHAN: Validasi session sebelum auto-login
-        if (sessionManager.isLoggedIn) {
-            validateSessionAndLogin()
+        val isLoggedIn = sessionManager.isLoggedIn
+        Log.d("MainActivity", "User logged in status: $isLoggedIn")
+
+        if (isLoggedIn) {
+            val username = sessionManager.username
+            val userId = sessionManager.userId
+
+            if (username.isNullOrEmpty() || userId.isNullOrEmpty()) {
+                Log.w("MainActivity", "Session data incomplete, forcing logout")
+                sessionManager.logoutUser()
+                showLoginScreen()
+            } else {
+                // 🔹 Tambahan fitur: cek apakah akun masih ada di database
+                checkIfAccountStillExists(username)
+            }
         } else {
+            Log.d("MainActivity", "User not logged in, showing login screen")
             showLoginScreen()
         }
     }
 
-    private fun validateSessionAndLogin() {
-        val username = sessionManager.username ?: ""
-
-        // Jika username kosong, langsung logout dan tampilkan login
-        if (username.isEmpty()) {
-            sessionManager.logoutUser()
-            showLoginScreen()
-            return
-        }
-
-        // URL endpoint untuk validasi session
-        val url = "http://ortuconnect.atwebpages.com/api/validate_session.php"
-
-        val params = JSONObject().apply {
-            put("username", username)
-        }
+    /** 🔹 Mengecek apakah akun user masih ada di database */
+    private fun checkIfAccountStillExists(username: String) {
+        val url = "http://ortuconnect.atwebpages.com/api/profile.php?username=$username"
+        Log.d("CheckAccount", "Checking account existence for $username")
 
         val request = JsonObjectRequest(
-            Request.Method.POST, url, params,
+            Request.Method.GET, url, null,
             { response ->
-                try {
-                    val isValid = response.optBoolean("valid", false)
-
-                    if (isValid) {
-                        // Session valid, lanjut ke dashboard
-                        startDashboard()
-                    } else {
-                        // Session tidak valid (akun dihapus), logout dan tampilkan login
-                        val message = response.optString("message", "Akun tidak ditemukan")
-                        sessionManager.logoutUser()
-                        runOnUiThread {
-                            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-                        }
-                        showLoginScreen()
-                    }
-                } catch (e: Exception) {
-                    Log.e("SessionValidation", "Error parsing response: ${e.message}", e)
-                    handleValidationError()
+                val success = response.optBoolean("success", false)
+                if (success) {
+                    Log.d("CheckAccount", "Account still exists, going to dashboard")
+                    startDashboard()
+                } else {
+                    Log.w("CheckAccount", "Account not found, logging out")
+                    Toast.makeText(this, "Akun sudah dihapus, silakan login ulang", Toast.LENGTH_LONG).show()
+                    sessionManager.logoutUser()
+                    showLoginScreen()
                 }
             },
             { error ->
-                Log.e("SessionValidation", "Network error: ${error.message}", error)
-                handleValidationError()
+                Log.e("CheckAccount", "Error checking account: ${error.message}")
+                // Jika koneksi gagal, tetap lanjutkan (agar tidak memblokir pengguna)
+                startDashboard()
             }
         )
 
         Volley.newRequestQueue(this).add(request)
     }
 
-    // FUNGSI BARU: Handle error saat validasi
-    private fun handleValidationError() {
-        // Jika error koneksi, beri kesempatan user untuk tetap masuk
-        // atau logout dan tampilkan login screen
-        runOnUiThread {
-            AlertDialog.Builder(this)
-                .setTitle("Gagal Validasi Session")
-                .setMessage("Tidak dapat memverifikasi akun. Lanjutkan atau login ulang?")
-                .setPositiveButton("Lanjutkan") { _, _ ->
-                    startDashboard()
-                }
-                .setNegativeButton("Login Ulang") { _, _ ->
-                    sessionManager.logoutUser()
-                    showLoginScreen()
-                }
-                .setCancelable(false)
-                .show()
-        }
-    }
-
     private fun showLoginScreen() {
+        Log.d("MainActivity", "Showing login screen")
         setContent {
             LoginScreen(sessionManager)
         }
     }
 
     private fun startDashboard() {
-        startActivity(Intent(this, NavigasiCard::class.java))
+        Log.d("MainActivity", "Starting dashboard")
+        val intent = Intent(this, NavigasiCard::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
         finish()
     }
 }
@@ -217,55 +194,60 @@ fun LoginScreen(sessionManager: SessionManager) {
                             Toast.makeText(context, "Isi semua kolom", Toast.LENGTH_SHORT).show()
                         } else {
                             isLoading = true
+                            Log.d("Login", "Attempting login for username: ${username.trim()}")
+
                             val url = "http://ortuconnect.atwebpages.com/api/login.php"
 
                             try {
                                 val params = JSONObject().apply {
-                                    put("username", username)
+                                    put("username", username.trim())
                                     put("password", password)
                                 }
 
-                                val request = JsonObjectRequest(
-                                    Request.Method.POST, url, params,
-                                    { response ->
+                                val request = object : JsonObjectRequest(
+                                    Method.POST, url, params,
+                                    Response.Listener { response ->
                                         isLoading = false
-                                        try {
-                                            val success = response.optBoolean("success", false)
-                                            val message = response.optString("message", "Terjadi kesalahan server atau data tidak lengkap (E1).")
 
-                                            if (success) {
-                                                val user = response.optJSONObject("user")
-                                                val usernameResp = user?.optString("username", username) ?: username
-                                                val token = user?.optString("token", "") ?: ""
+                                        Log.d("Login", "Server response: ${response.toString(2)}")
 
-                                                // Simpan session menggunakan SessionManager Java
-                                                sessionManager.createLoginSession(true, token)
-                                                sessionManager.saveUsername(usernameResp)
+                                        val success = response.optBoolean("success", false)
+                                        val message = response.optString("message", "Terjadi kesalahan server")
 
-                                                Toast.makeText(context, "Login berhasil", Toast.LENGTH_SHORT).show()
+                                        if (success) {
+                                            val user = response.optJSONObject("user")
 
-                                                context.startActivity(Intent(context, NavigasiCard::class.java))
+                                            if (user != null) {
+                                                val userId = user.optString("id_akun", "")
+                                                val serverUsername = user.optString("username", username.trim())
+                                                val role = user.optString("role", "")
+
+                                                sessionManager.createLoginSession(serverUsername, userId, role)
+
+                                                Toast.makeText(context, "Login berhasil!", Toast.LENGTH_SHORT).show()
+                                                val intent = Intent(context, NavigasiCard::class.java)
+                                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                                context.startActivity(intent)
                                                 (context as? ComponentActivity)?.finish()
                                             } else {
-                                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Format respons tidak valid", Toast.LENGTH_LONG).show()
                                             }
-                                        } catch (e: Exception) {
-                                            Log.e("LoginFix", "Exception di Volley Success: ${e.message}", e)
-                                            Toast.makeText(context, "Data respons tidak valid. Tetap di login (E2).", Toast.LENGTH_LONG).show()
+                                        } else {
+                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                         }
                                     },
-                                    { error ->
+                                    Response.ErrorListener { error ->
                                         isLoading = false
-                                        Log.e("LoginFix", "Volley Error: ${error.message}", error)
-                                        Toast.makeText(context, "Gagal koneksi ke server. Coba lagi (E3).", Toast.LENGTH_LONG).show()
+                                        Log.e("Login", "Volley Error: ${error.message}", error)
+                                        Toast.makeText(context, "Gagal koneksi ke server", Toast.LENGTH_LONG).show()
                                     }
-                                )
+                                ) {}
 
                                 Volley.newRequestQueue(context).add(request)
                             } catch (e: Exception) {
                                 isLoading = false
-                                Log.e("LoginFix", "Exception saat membuat request: ${e.message}", e)
-                                Toast.makeText(context, "Kesalahan internal aplikasi (E4).", Toast.LENGTH_LONG).show()
+                                Log.e("Login", "Exception: ${e.message}", e)
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                             }
                         }
                     },

@@ -12,6 +12,7 @@ import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -19,6 +20,8 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.mobiles_tktech.MainActivity;
 import com.example.mobiles_tktech.R;
+import com.example.mobiles_tktech.dashboard.DashboardFragment;
+import com.example.mobiles_tktech.navigasi.NavigasiCard;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,18 +40,18 @@ public class ProfileFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.activity_profile, container, false);
+        return inflater.inflate(R.layout.fragment_profile, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        requestQueue = Volley.newRequestQueue(requireContext());
 
+        requestQueue = Volley.newRequestQueue(requireContext());
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         usernameOrtu = prefs.getString("username", "");
 
-        // 🔹 Bind Views
+        // Bind Views
         tvAnakNama = view.findViewById(R.id.detail_name_anak).findViewById(R.id.tvDetailValue);
         tvAnakAlamat = view.findViewById(R.id.detail_alamat).findViewById(R.id.tvDetailValue);
         tvAnakTglLahir = view.findViewById(R.id.detail_tanggal_lahir).findViewById(R.id.tvDetailValue);
@@ -58,20 +61,31 @@ public class ProfileFragment extends Fragment {
         tvProfileNameTop = view.findViewById(R.id.tvProfileNameTop);
         tvProfileClass = view.findViewById(R.id.tvProfileClass);
         imgEditIcon = view.findViewById(R.id.imgEditProfileIcon);
-        imgProfilePicture = view.findViewById(R.id.img_profile_large); // Tambahkan di layout XML kamu
+        imgProfilePicture = view.findViewById(R.id.img_profile_large);
+        ImageButton btnBackHeader = view.findViewById(R.id.btn_back_header);
 
-        // 🔹 Label setup
-        ((TextView) view.findViewById(R.id.detail_name_anak).findViewById(R.id.tvDetailLabel)).setText("Nama Anak:");
-        ((TextView) view.findViewById(R.id.detail_alamat).findViewById(R.id.tvDetailLabel)).setText("Alamat:");
-        ((TextView) view.findViewById(R.id.detail_tanggal_lahir).findViewById(R.id.tvDetailLabel)).setText("Tanggal Lahir:");
-        ((TextView) view.findViewById(R.id.gender).findViewById(R.id.tvDetailLabel)).setText("Gender:");
-        ((TextView) view.findViewById(R.id.detail_name_ortu).findViewById(R.id.tvDetailLabel)).setText("Nama Orang Tua:");
-        ((TextView) view.findViewById(R.id.detail_phone_ortu).findViewById(R.id.tvDetailLabel)).setText("Nomor Telepon:");
+        // Label setup
+        setLabelText(view, R.id.detail_name_anak, "Nama Anak:");
+        setLabelText(view, R.id.detail_alamat, "Alamat:");
+        setLabelText(view, R.id.detail_tanggal_lahir, "Tanggal Lahir:");
+        setLabelText(view, R.id.gender, "Gender:");
+        setLabelText(view, R.id.detail_name_ortu, "Nama Orang Tua:");
+        setLabelText(view, R.id.detail_phone_ortu, "Nomor Telepon:");
 
+        // Tombol aksi
         view.findViewById(R.id.btnKeluar).setOnClickListener(v -> logoutUser());
         imgEditIcon.setOnClickListener(v -> showEditDataDialog());
+        btnBackHeader.setOnClickListener(v -> navigateBackToDashboard());
 
+        // Load data profil
         loadProfileData();
+    }
+
+    // 🔹 Navigasi kembali ke Dashboard melalui NavigasiCard
+    private void navigateBackToDashboard() {
+        if (getActivity() instanceof NavigasiCard) {
+            ((NavigasiCard) getActivity()).navigateToDashboard();
+        }
     }
 
     private void loadProfileData() {
@@ -100,7 +114,6 @@ public class ProfileFragment extends Fragment {
                             tvProfileNameTop.setText(nama);
                             tvProfileClass.setText(kelas.toUpperCase());
 
-                            // 🔹 Update icon berdasarkan gender
                             updateProfileIcon(gender);
                         } else {
                             Toast.makeText(getContext(), "Data tidak ditemukan", Toast.LENGTH_SHORT).show();
@@ -117,12 +130,15 @@ public class ProfileFragment extends Fragment {
 
     private void updateProfileIcon(String gender) {
         if (imgProfilePicture == null) return;
-
-        if (gender.equalsIgnoreCase("perempuan") || gender.equalsIgnoreCase("Perempuan")) {
-            imgProfilePicture.setImageResource(R.drawable.icon_cewe); // 🔹 pastikan kamu punya ic_girl.png di drawable
+        if (gender.equalsIgnoreCase("perempuan")) {
+            imgProfilePicture.setImageResource(R.drawable.icon_cewe);
         } else {
-            imgProfilePicture.setImageResource(R.drawable.icon_cowo); // 🔹 pastikan kamu punya ic_boy.png di drawable
+            imgProfilePicture.setImageResource(R.drawable.icon_cowo);
         }
+    }
+
+    private void setLabelText(View parent, int layoutId, String label) {
+        ((TextView) parent.findViewById(layoutId).findViewById(R.id.tvDetailLabel)).setText(label);
     }
 
     private void showEditDataDialog() {

@@ -5,10 +5,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.view.*;
 import android.widget.*;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -17,7 +16,8 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.example.mobiles_tktech.R; // Pastikan R mengarah ke package yang benar
+import com.example.mobiles_tktech.R;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -38,13 +38,12 @@ public class PerizinanFragment extends Fragment {
     private Calendar calendar = Calendar.getInstance();
 
     private static final String URL_IZIN = "http://ortuconnect.atwebpages.com/api/perizinan.php";
-    private String selectedMonthFilter = "Semua Bulan"; // Default filter
+    private String selectedMonthFilter = "Semua Bulan";
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // Pastikan R.layout.fragment_perizinan mengarah ke layout yang sudah dimodifikasi
-        return inflater.inflate(R.layout.activity_ajukan_izin, container, false);
+        return inflater.inflate(R.layout.fragment_perizinan, container, false);
     }
 
     @Override
@@ -59,39 +58,41 @@ public class PerizinanFragment extends Fragment {
         spinnerJenis = view.findViewById(R.id.spinnerJenisIzin);
         btnKirim = view.findViewById(R.id.btnKirimIzin);
         containerStatus = view.findViewById(R.id.containerStatus);
-
-        // Inisialisasi Spinner Filter
         spinnerBulanFilter = view.findViewById(R.id.spinnerBulanFilter);
+
+        // 🔙 Tombol kembali ke Dashboard lewat NavigasiCard (bukan membuat fragment baru)
+        ImageButton btnBack = view.findViewById(R.id.btn_back_header);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> {
+                if (getActivity() instanceof com.example.mobiles_tktech.navigasi.NavigasiCard) {
+                    ((com.example.mobiles_tktech.navigasi.NavigasiCard) getActivity()).navigateToDashboard();
+
+                    // update icon bottom nav ke Beranda
+                    BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav_card);
+                    bottomNav.setSelectedItemId(R.id.nav_beranda);
+                }
+            });
+        }
 
         edtTanggalMulai.setOnClickListener(v -> showDatePickerDialog(edtTanggalMulai));
         edtTanggalSelesai.setOnClickListener(v -> showDatePickerDialog(edtTanggalSelesai));
-
         btnKirim.setOnClickListener(v -> kirimIzin());
 
-        // Atur Listener untuk Filter Bulan
         setupBulanFilter();
-
-        // Panggil pertama kali, data akan dimuat dengan filter default ("Semua Bulan")
         loadRiwayatIzin();
     }
 
     private void setupBulanFilter() {
         if (spinnerBulanFilter == null) return;
-
-        // Listener saat item Spinner dipilih
         spinnerBulanFilter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // Ambil bulan yang dipilih
                 selectedMonthFilter = parent.getItemAtPosition(position).toString();
-                // Muat ulang data dengan filter baru
                 loadRiwayatIzin();
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                // Tidak perlu implementasi khusus
-            }
+            public void onNothingSelected(AdapterView<?> parent) { }
         });
     }
 
@@ -104,7 +105,6 @@ public class PerizinanFragment extends Fragment {
                 (view, y, m, d) -> {
                     Calendar newCal = Calendar.getInstance();
                     newCal.set(y, m, d);
-                    // Format tanggal yang kompatibel dengan database (misal: "yyyy-MM-dd")
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
                     editText.setText(sdf.format(newCal.getTime()));
                 }, year, month, day);
@@ -112,7 +112,6 @@ public class PerizinanFragment extends Fragment {
     }
 
     private void kirimIzin() {
-        // ... (Kode kirimIzin() tidak berubah) ...
         String tanggalMulai = edtTanggalMulai.getText().toString().trim();
         String tanggalSelesai = edtTanggalSelesai.getText().toString().trim();
         String jenisIzin = spinnerJenis.getSelectedItem().toString();
@@ -152,7 +151,6 @@ public class PerizinanFragment extends Fragment {
                             edtTanggalMulai.setText("");
                             edtTanggalSelesai.setText("");
                             edtKeterangan.setText("");
-                            // Muat ulang riwayat setelah kirim, menggunakan filter bulan saat ini
                             loadRiwayatIzin();
                         } else {
                             Toast.makeText(getContext(), response.optString("message"), Toast.LENGTH_SHORT).show();
@@ -172,21 +170,11 @@ public class PerizinanFragment extends Fragment {
         }
     }
 
-
-    /**
-     * Memuat riwayat izin dari server dan meneruskan ke fungsi filter.
-     * Tidak lagi menerima parameter, karena filter diambil dari selectedMonthFilter.
-     */
     private void loadRiwayatIzin() {
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         String username = prefs.getString("username", "");
+        if (username.isEmpty()) return;
 
-        if (username.isEmpty()) {
-            return;
-        }
-
-        // Anda dapat menambahkan parameter filter ke URL jika API Anda mendukungnya.
-        // Jika tidak, kita akan melakukan filtering di sisi client (dalam tampilkanStatus).
         String url = URL_IZIN + "?username=" + username;
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
@@ -195,89 +183,56 @@ public class PerizinanFragment extends Fragment {
                     try {
                         if (response.getBoolean("success")) {
                             JSONArray data = response.getJSONArray("data");
-                            // Teruskan data dan filter yang dipilih ke fungsi tampilkanStatus
                             tampilkanStatus(data, selectedMonthFilter);
                         } else {
-                            containerStatus.removeAllViews();
-                            // Tampilkan pesan "Tidak ada data"
-                            TextView tvNoData = new TextView(getContext());
-                            tvNoData.setText("Tidak ada riwayat perizinan.");
-                            tvNoData.setPadding(0, 32, 0, 0);
-                            containerStatus.addView(tvNoData);
+                            tampilkanKosong("Tidak ada riwayat perizinan.");
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 },
                 error -> {
-                    if (isAdded()) {
-                        Toast.makeText(getContext(), "Gagal memuat riwayat izin.", Toast.LENGTH_SHORT).show();
-                        containerStatus.removeAllViews();
-                    }
-                }
-        );
+                    if (isAdded()) tampilkanKosong("Gagal memuat riwayat izin.");
+                });
         requestQueue.add(request);
     }
 
-    /**
-     * Menampilkan dan memfilter status perizinan.
-     */
     private void tampilkanStatus(JSONArray rawData, String filterBulan) throws JSONException {
-        if (!isAdded() || getContext() == null) {
-            return;
-        }
+        if (!isAdded() || getContext() == null) return;
 
         containerStatus.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(requireContext());
-        SimpleDateFormat sdfBulan = new SimpleDateFormat("MMMM", new Locale("id", "ID")); // Format bulan: Januari, Februari, dst.
-        SimpleDateFormat sdfParse = new SimpleDateFormat("yyyy-MM-dd", Locale.US); // Format tanggal dari API
+        SimpleDateFormat sdfBulan = new SimpleDateFormat("MMMM", new Locale("id", "ID"));
+        SimpleDateFormat sdfParse = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
 
         for (int i = 0; i < rawData.length(); i++) {
             JSONObject izin = rawData.getJSONObject(i);
             String tglMulai = izin.optString("tanggal_mulai", "");
-
-            // --- Logika Filtering ---
             boolean passFilter = true;
+
             if (!filterBulan.equals("Semua Bulan") && !tglMulai.isEmpty()) {
                 try {
                     Date dateMulai = sdfParse.parse(tglMulai);
                     String bulanData = sdfBulan.format(dateMulai);
-
-                    // Pengecekan apakah bulan data cocok dengan bulan filter
-                    if (!bulanData.equalsIgnoreCase(filterBulan)) {
-                        passFilter = false;
-                    }
+                    passFilter = bulanData.equalsIgnoreCase(filterBulan);
                 } catch (Exception e) {
-                    // Abaikan data jika format tanggalnya salah/tidak bisa diparse
-                    Log.e("Perizinan", "Gagal memparsing tanggal: " + tglMulai, e);
+                    Log.e("Perizinan", "Gagal parsing tanggal: " + tglMulai, e);
                     passFilter = false;
                 }
             }
 
             if (passFilter) {
-                // --- Tampilkan Card Jika Lolos Filter ---
                 View card = inflater.inflate(R.layout.item_status_izin, containerStatus, false);
-
                 TextView tvTanggal = card.findViewById(R.id.tvTanggalIzin);
                 TextView tvJenis = card.findViewById(R.id.tvJenisIzin);
                 TextView tvStatus = card.findViewById(R.id.tvStatusIzin);
 
                 String tglSelesai = izin.optString("tanggal_selesai", "");
-
-                // Gunakan operator Elvis-like untuk Java (ternary operator)
-                String displayTglMulai = tglMulai.isEmpty() ? "-" : tglMulai;
-
-                if (tglSelesai.isEmpty() || tglSelesai.equals(tglMulai)) {
-                    tvTanggal.setText(displayTglMulai);
-                } else {
-                    tvTanggal.setText(displayTglMulai + " - " + tglSelesai);
-                }
-
+                tvTanggal.setText(tglSelesai.isEmpty() ? tglMulai : tglMulai + " - " + tglSelesai);
                 tvJenis.setText(izin.optString("jenis_izin", "-"));
                 String status = izin.optString("status", "Menunggu");
 
                 tvStatus.setText(status);
-                // Menggunakan ContextCompat atau requireContext().getColor() jika API > 23
                 if (status.equalsIgnoreCase("Menunggu")) {
                     tvStatus.setBackgroundResource(R.drawable.bg_status_menunggu);
                     tvStatus.setTextColor(getResources().getColor(android.R.color.black));
@@ -285,7 +240,6 @@ public class PerizinanFragment extends Fragment {
                     tvStatus.setBackgroundResource(R.drawable.bg_status_disetujui);
                     tvStatus.setTextColor(getResources().getColor(android.R.color.white));
                 } else {
-                    // Status lain atau null
                     tvStatus.setBackgroundResource(android.R.color.darker_gray);
                     tvStatus.setTextColor(getResources().getColor(android.R.color.white));
                 }
@@ -294,12 +248,14 @@ public class PerizinanFragment extends Fragment {
             }
         }
 
-        // Cek jika setelah filter, tidak ada data yang tersisa
-        if (containerStatus.getChildCount() == 0) {
-            TextView tvNoData = new TextView(getContext());
-            tvNoData.setText("Tidak ada riwayat perizinan pada bulan " + filterBulan + ".");
-            tvNoData.setPadding(0, 32, 0, 0);
-            containerStatus.addView(tvNoData);
-        }
+        if (containerStatus.getChildCount() == 0) tampilkanKosong("Tidak ada riwayat perizinan bulan " + filterBulan + ".");
+    }
+
+    private void tampilkanKosong(String pesan) {
+        containerStatus.removeAllViews();
+        TextView tv = new TextView(getContext());
+        tv.setText(pesan);
+        tv.setPadding(0, 32, 0, 0);
+        containerStatus.addView(tv);
     }
 }
