@@ -16,25 +16,6 @@
         android:padding="12dp"
         android:gravity="center_vertical">
 
-        <FrameLayout
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/rounded_circle_blue"
-            android:layout_marginEnd="12dp">
-
-            <!-- Waktu Kegiatan -->
-            <TextView
-                android:id="@+id/tv_kegiatan_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="07.00"
-                android:textColor="@android:color/white"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:layout_gravity="center"
-                tools:ignore="SmallSp" />
-        </FrameLayout>
-
 
         <LinearLayout
             android:layout_width="0dp"

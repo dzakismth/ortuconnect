@@ -32,6 +32,11 @@ import com.android.volley.toolbox.Volley
 import org.json.JSONObject
 import com.example.mobiles_tktech.login.SessionManager
 import com.example.mobiles_tktech.navigasi.NavigasiCard
+import androidx.compose.ui.draw.paint
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+
+
 
 class MainActivity : ComponentActivity() {
     private lateinit var sessionManager: SessionManager
@@ -115,15 +120,23 @@ fun LoginScreen(sessionManager: SessionManager) {
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
+//    val painter = painterResource(id = R.drawable.background_gradient_blue_purple)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF3B82F6), Color(0xFF8B5CF6))
+                    colors = listOf(
+                        Color(0xFF007ABF),
+                        Color(0xFF45287F),
+                        Color(0xFF68327E)
+                    )
                 )
             )
-    ) {
+    )
+
+    {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
