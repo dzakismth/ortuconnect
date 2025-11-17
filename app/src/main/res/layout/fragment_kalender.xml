@@ -7,7 +7,7 @@
     android:background="@drawable/background_gradient_blue_purple"
     tools:context=".kalender.KalenderFragment">
 
-    <!-- Header / Judul Halaman dengan Tombol Kembali -->
+    <!-- Header -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header_container"
         android:layout_width="match_parent"
@@ -16,7 +16,6 @@
         android:paddingBottom="8dp"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Tombol Kembali -->
         <ImageButton
             android:id="@+id/btn_back_header"
             android:layout_width="wrap_content"
@@ -28,16 +27,13 @@
             app:tint="@android:color/white"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:contentDescription="Tombol Kembali" />
+            app:layout_constraintBottom_toBottomOf="parent" />
 
-        <!-- Judul Terpusat -->
         <TextView
             android:id="@+id/tv_title_kalender"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Kalender Kegiatan"
-            android:fontFamily="@font/fontutama"
             android:textColor="@android:color/white"
             android:textSize="20sp"
             android:textStyle="bold"
@@ -47,7 +43,8 @@
             app:layout_constraintBottom_toBottomOf="parent"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- CardView untuk Kalender -->
+
+    <!-- Card Kalender -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_kalender"
         android:layout_width="match_parent"
@@ -69,7 +66,6 @@
             android:paddingBottom="8dp"
             android:paddingHorizontal="8dp">
 
-            <!-- Judul Bulan Saat Ini -->
             <TextView
                 android:id="@+id/tv_current_month"
                 android:layout_width="wrap_content"
@@ -81,52 +77,61 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="8dp"/>
 
-            <!-- CalendarView -->
             <CalendarView
                 android:id="@+id/calendar_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingVertical="8dp"
                 android:firstDayOfWeek="2"
-                android:showWeekNumber="false"
-                android:minDate="01/01/2025"
-                android:maxDate="31/12/2025"
-                android:dateTextAppearance="@style/CalenderViewDateCustomText"
-                android:weekDayTextAppearance="@style/CalenderViewWeekCustomText"/>
-
+                android:showWeekNumber="false"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
 
-    <!-- Judul Agenda Terdekat -->
-    <TextView
-        android:id="@+id/tv_agenda_terdekat"
-        android:layout_width="wrap_content"
+    <!-- Card Agenda Terbaru -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_agenda_terbaru"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Agenda Terdekat"
-        android:fontFamily="@font/fontutama"
-        android:textColor="@android:color/white"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginTop="24dp"
-        android:layout_marginStart="24dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/card_kalender" />
-
-    <!-- RecyclerView untuk Daftar Agenda -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_agenda_list"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="12dp"
-        android:paddingBottom="16dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintTop_toBottomOf="@id/tv_agenda_terdekat"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:cardCornerRadius="20dp"
+        app:cardBackgroundColor="@android:color/white"
+        app:cardElevation="4dp"
+        app:layout_constraintTop_toBottomOf="@id/card_kalender"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:listitem="@layout/item_kegiatan"
-        tools:itemCount="3" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tv_judul_kegiatan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gagal memuat agenda"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"/>
+
+            <TextView
+                android:id="@+id/tv_tanggal_kegiatan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="-"
+                android:textSize="14sp"
+                android:layout_marginTop="6dp"/>
+
+            <TextView
+                android:id="@+id/tv_deskripsi_kegiatan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Periksa koneksi internet"
+                android:textSize="14sp"
+                android:layout_marginTop="6dp"/>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
