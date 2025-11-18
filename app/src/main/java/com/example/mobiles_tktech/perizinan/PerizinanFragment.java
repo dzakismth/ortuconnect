@@ -29,7 +29,9 @@ import java.util.*;
 public class PerizinanFragment extends Fragment {
 
     private EditText edtTanggalMulai, edtTanggalSelesai, edtKeterangan;
-    private Spinner spinnerJenis, spinnerBulanFilter;
+    private Spinner spinnerJenis;
+    // Tambahkan Spinner untuk filter bulan09
+    private Spinner spinnerBulanFilter;
     private Button btnKirim;
     private LinearLayout containerStatus;
     private RequestQueue requestQueue;
