@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -20,7 +21,6 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.mobiles_tktech.MainActivity;
 import com.example.mobiles_tktech.R;
-import com.example.mobiles_tktech.dashboard.DashboardFragment;
 import com.example.mobiles_tktech.navigasi.NavigasiCard;
 
 import org.json.JSONException;
@@ -31,15 +31,18 @@ import java.util.Map;
 
 public class ProfileFragment extends Fragment {
 
-    private TextView tvAnakNama, tvAnakAlamat, tvAnakTglLahir, tvGender, tvOrtuNama, tvOrtuPhone, tvProfileNameTop, tvProfileClass;
+    private TextView tvAnakNama, tvAnakAlamat, tvAnakTglLahir, tvGender, tvOrtuNama,
+            tvOrtuPhone, tvProfileNameTop, tvProfileClass;
     private ImageView imgEditIcon, imgProfilePicture;
     private RequestQueue requestQueue;
+
     private static final String BASE_URL = "http://ortuconnect.atwebpages.com/api/profile.php";
     private String usernameOrtu = "";
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_profile, container, false);
     }
 
@@ -48,10 +51,11 @@ public class ProfileFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         requestQueue = Volley.newRequestQueue(requireContext());
+
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         usernameOrtu = prefs.getString("username", "");
 
-        // Bind Views
+        // Bind UI
         tvAnakNama = view.findViewById(R.id.detail_name_anak).findViewById(R.id.tvDetailValue);
         tvAnakAlamat = view.findViewById(R.id.detail_alamat).findViewById(R.id.tvDetailValue);
         tvAnakTglLahir = view.findViewById(R.id.detail_tanggal_lahir).findViewById(R.id.tvDetailValue);
@@ -64,34 +68,38 @@ public class ProfileFragment extends Fragment {
         imgProfilePicture = view.findViewById(R.id.img_profile_large);
         ImageButton btnBackHeader = view.findViewById(R.id.btn_back_header);
 
-        // Label setup
-        setLabelText(view, R.id.detail_name_anak, "Nama Anak:");
-        setLabelText(view, R.id.detail_alamat, "Alamat:");
-        setLabelText(view, R.id.detail_tanggal_lahir, "Tanggal Lahir:");
-        setLabelText(view, R.id.gender, "Gender:");
-        setLabelText(view, R.id.detail_name_ortu, "Nama Orang Tua:");
-        setLabelText(view, R.id.detail_phone_ortu, "Nomor Telepon:");
+        // Label
+        setLabel(view, R.id.detail_name_anak, "Nama Anak:");
+        setLabel(view, R.id.detail_alamat, "Alamat:");
+        setLabel(view, R.id.detail_tanggal_lahir, "Tanggal Lahir:");
+        setLabel(view, R.id.gender, "Gender:");
+        setLabel(view, R.id.detail_name_ortu, "Nama Orang Tua:");
+        setLabel(view, R.id.detail_phone_ortu, "Nomor Telepon:");
 
-        // Tombol aksi
-        view.findViewById(R.id.btnKeluar).setOnClickListener(v -> logoutUser());
+        view.findViewById(R.id.btnKeluar).setOnClickListener(v -> {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Konfirmasi")
+                    .setMessage("Apakah Anda yakin ingin keluar dari perangkat?")
+                    .setPositiveButton("Ya", (dialog, which) -> logoutUser())
+                    .setNegativeButton("Tidak", (dialog, which) -> dialog.dismiss())
+                    .show();
+        });
+
         imgEditIcon.setOnClickListener(v -> showEditDataDialog());
-        btnBackHeader.setOnClickListener(v -> navigateBackToDashboard());
+        btnBackHeader.setOnClickListener(v -> {
+            if (getActivity() instanceof NavigasiCard) {
+                ((NavigasiCard) getActivity()).navigateToDashboard();
+            }
+        });
 
-        // Load data profil
         loadProfileData();
-    }
-
-    // 🔹 Navigasi kembali ke Dashboard melalui NavigasiCard
-    private void navigateBackToDashboard() {
-        if (getActivity() instanceof NavigasiCard) {
-            ((NavigasiCard) getActivity()).navigateToDashboard();
-        }
     }
 
     private void loadProfileData() {
         String url = BASE_URL + "?username=" + usernameOrtu;
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET, url, null,
                 response -> {
                     try {
                         if (response.getBoolean("success")) {
@@ -115,14 +123,12 @@ public class ProfileFragment extends Fragment {
                             tvProfileClass.setText(kelas.toUpperCase());
 
                             updateProfileIcon(gender);
-                        } else {
-                            Toast.makeText(getContext(), "Data tidak ditemukan", Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
                         Toast.makeText(getContext(), "Kesalahan parsing data", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> Toast.makeText(getContext(), "Gagal koneksi ke server", Toast.LENGTH_SHORT).show()
+                error -> Toast.makeText(getContext(), "Gagal koneksi server", Toast.LENGTH_SHORT).show()
         );
 
         requestQueue.add(request);
@@ -130,6 +136,7 @@ public class ProfileFragment extends Fragment {
 
     private void updateProfileIcon(String gender) {
         if (imgProfilePicture == null) return;
+
         if (gender.equalsIgnoreCase("perempuan")) {
             imgProfilePicture.setImageResource(R.drawable.icon_cewe);
         } else {
@@ -137,7 +144,7 @@ public class ProfileFragment extends Fragment {
         }
     }
 
-    private void setLabelText(View parent, int layoutId, String label) {
+    private void setLabel(View parent, int layoutId, String label) {
         ((TextView) parent.findViewById(layoutId).findViewById(R.id.tvDetailLabel)).setText(label);
     }
 
@@ -151,44 +158,44 @@ public class ProfileFragment extends Fragment {
         Button btnSimpan = dialogView.findViewById(R.id.btn_simpan_dialog);
         Button btnBatal = dialogView.findViewById(R.id.btn_batal_dialog);
 
-        final EditText edtNamaAnak = createEditText(context, "Nama Anak", tvAnakNama.getText().toString());
-        final EditText edtTanggalLahir = createEditText(context, "Tanggal Lahir (YYYY-MM-DD)", tvAnakTglLahir.getText().toString());
-        final EditText edtAlamat = createEditText(context, "Alamat", tvAnakAlamat.getText().toString());
-        final EditText edtGender = createEditText(context, "Gender", tvGender.getText().toString());
-        final EditText edtNamaOrtu = createEditText(context, "Nama Orang Tua", tvOrtuNama.getText().toString());
-        final EditText edtNoTelp = createEditText(context, "Nomor Telepon", tvOrtuPhone.getText().toString());
-        final EditText edtKelas = createEditText(context, "Kelas", tvProfileClass.getText().toString());
+        final EditText edtNama = createEdit("Nama Anak", tvAnakNama.getText().toString());
+        final EditText edtTgl = createEdit("Tanggal Lahir (YYYY-MM-DD)", tvAnakTglLahir.getText().toString());
+        final EditText edtAlamat = createEdit("Alamat", tvAnakAlamat.getText().toString());
+
+        //  Gender pakai Spinner
+        final Spinner spGender = new Spinner(context);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(context,
+                android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"Laki-Laki", "Perempuan"});
+        spGender.setAdapter(adapter);
+
+        spGender.setSelection(tvGender.getText().toString().equalsIgnoreCase("perempuan") ? 1 : 0);
+
+        llContainer.addView(edtNama);
+        llContainer.addView(edtTgl);
+        llContainer.addView(edtAlamat);
+        llContainer.addView(spGender);
+
+        final EditText edtOrtu = createEdit("Nama Orang Tua", tvOrtuNama.getText().toString());
+        final EditText edtTelp = createEdit("Nomor Telepon", tvOrtuPhone.getText().toString());
+        final EditText edtKelas = createEdit("Kelas", tvProfileClass.getText().toString());
         edtKelas.setEnabled(false);
 
-        llContainer.addView(edtNamaAnak);
-        llContainer.addView(edtTanggalLahir);
-        llContainer.addView(edtAlamat);
-        llContainer.addView(edtGender);
-        llContainer.addView(edtNamaOrtu);
-        llContainer.addView(edtNoTelp);
+        llContainer.addView(edtOrtu);
+        llContainer.addView(edtTelp);
         llContainer.addView(edtKelas);
 
         AlertDialog dialog = builder.create();
         dialog.show();
 
         btnSimpan.setOnClickListener(v -> {
-            if (edtNamaAnak.getText().toString().isEmpty() ||
-                    edtTanggalLahir.getText().toString().isEmpty() ||
-                    edtAlamat.getText().toString().isEmpty() ||
-                    edtGender.getText().toString().isEmpty() ||
-                    edtNamaOrtu.getText().toString().isEmpty() ||
-                    edtNoTelp.getText().toString().isEmpty()) {
-                Toast.makeText(context, "Semua field harus diisi!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
             updateProfile(
-                    edtNamaAnak.getText().toString(),
-                    edtTanggalLahir.getText().toString(),
+                    edtNama.getText().toString(),
+                    edtTgl.getText().toString(),
                     edtAlamat.getText().toString(),
-                    edtGender.getText().toString(),
-                    edtNamaOrtu.getText().toString(),
-                    edtNoTelp.getText().toString(),
+                    spGender.getSelectedItem().toString(),
+                    edtOrtu.getText().toString(),
+                    edtTelp.getText().toString(),
                     dialog
             );
         });
@@ -196,51 +203,57 @@ public class ProfileFragment extends Fragment {
         btnBatal.setOnClickListener(v -> dialog.dismiss());
     }
 
-    private EditText createEditText(Context context, String hint, String value) {
-        EditText edt = new EditText(context);
-        edt.setHint(hint);
-        edt.setText(value);
-        edt.setPadding(32, 20, 32, 20);
-        edt.setBackgroundResource(android.R.drawable.edit_text);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
+    private EditText createEdit(String hint, String value) {
+        EditText e = new EditText(requireContext());
+        e.setHint(hint);
+        e.setText(value);
+
+        e.setPadding(32, 24, 32, 24);
+        e.setBackgroundResource(android.R.drawable.edit_text);
+
+        LinearLayout.LayoutParams params =
+                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
         params.bottomMargin = 20;
-        edt.setLayoutParams(params);
-        return edt;
+        e.setLayoutParams(params);
+
+        return e;
     }
 
-    private void updateProfile(String nama, String tgl, String alamat, String gender, String ortu, String telp, AlertDialog dialog) {
+    private void updateProfile(String nama, String tgl, String alamat, String gender,
+                               String ortu, String telp, AlertDialog dialog) {
+
         StringRequest request = new StringRequest(Request.Method.POST, BASE_URL,
                 response -> {
-                    Toast.makeText(getContext(), "Profil berhasil diperbarui", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Berhasil update profil", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
                     loadProfileData();
                 },
-                error -> Toast.makeText(getContext(), "Gagal memperbarui profil", Toast.LENGTH_SHORT).show()) {
+                error -> Toast.makeText(getContext(), "Gagal update", Toast.LENGTH_SHORT).show()
+        ) {
             @Override
             protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("username", usernameOrtu);
-                params.put("nama_siswa", nama);
-                params.put("tanggal_lahir", tgl);
-                params.put("alamat", alamat);
-                params.put("gender", gender);
-                params.put("nama_ortu", ortu);
-                params.put("no_telp_ortu", telp);
-                return params;
+                Map<String, String> p = new HashMap<>();
+                p.put("username", usernameOrtu);
+                p.put("nama_siswa", nama);
+                p.put("tanggal_lahir", tgl);
+                p.put("alamat", alamat);
+                p.put("gender", gender);
+                p.put("nama_ortu", ortu);
+                p.put("no_telp_ortu", telp);
+                return p;
             }
         };
+
         requestQueue.add(request);
     }
 
     private void logoutUser() {
-        SharedPreferences sharedPref = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        sharedPref.edit().clear().apply();
+        SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        prefs.edit().clear().apply();
 
-        Intent intent = new Intent(getActivity(), MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        requireActivity().finish();
+        Intent i = new Intent(getActivity(), MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(i);
     }
 }

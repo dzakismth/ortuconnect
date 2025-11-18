@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="blue_main">#0097A7</color>
+    <color name="blue_main">@color/biru</color>
     <color name="nav_item_active">@color/blue_main</color>
     <color name="nav_item_inactive">#B0BEC5</color>
 

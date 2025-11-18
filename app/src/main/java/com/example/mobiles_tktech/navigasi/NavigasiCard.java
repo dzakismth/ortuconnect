@@ -32,7 +32,7 @@ public class NavigasiCard extends AppCompatActivity {
     private SessionManager sessionManager;
     private Handler sessionCheckHandler;
     private Runnable sessionCheckRunnable;
-    private static final long SESSION_CHECK_INTERVAL = 5000; // Cek setiap 5 detik
+    private static final long SESSION_CHECK_INTERVAL = 50000; // Cek setiap 5 detik
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -218,7 +218,7 @@ fun LoginScreen(sessionManager: SessionManager) {
                                             val user = response.optJSONObject("user")
 
                                             if (user != null) {
-                                                val userId = user.optString("id_akun", "")
+                                                val userId = user.optString("id_siswa", "")
                                                 val serverUsername = user.optString("username", username.trim())
                                                 val role = user.optString("role", "")
 
