@@ -100,7 +100,7 @@ public class DashboardFragment extends Fragment {
                             loadIzinTerbaru();
                             loadAgendaTerbaru();
 
-                            // ➕ TAMBAHAN — tampilkan hanya HADIR minggu ini
+                            // ➕ TAMBAHAN — tampilkan hanya HADIR minggu ini bos
                             loadKehadiranMingguIni();
 
                         } else Toast.makeText(getContext(), "Profil tidak ditemukan", Toast.LENGTH_SHORT).show();
