@@ -14,7 +14,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
 import com.android.volley.Request;
@@ -30,19 +29,17 @@ import org.json.JSONObject;
 
 public class DashboardFragment extends Fragment {
 
-    private TextView tvNamaSiswa, tvKelas, tvJadwal, tvKehadiran, tvIzin;
+    private TextView tvNamaSiswa, tvKelas, tvJadwal, tvKehadiran, tvIzin, tvPengumuman;
     private ImageView imgProfile;
     private RequestQueue requestQueue;
     private String usernameOrtu, kelasSiswa;
 
+    private static final String TAG = "DashboardFragment";
     private static final String BASE_PROFILE = "http://ortuconnect.atwebpages.com/api/profile.php";
     private static final String BASE_JADWAL = "http://ortuconnect.atwebpages.com/api/jadwal_hari_ini.php";
-    private static final String BASE_KEHADIRAN = "http://ortuconnect.atwebpages.com/api/kehadiran.php";
+    private static final String BASE_KEHADIRAN_MINGGU = "http://ortuconnect.atwebpages.com/api/kehadiran_minggu.php";
     private static final String BASE_IZIN = "http://ortuconnect.atwebpages.com/api/izin_terbaru.php";
     private static final String BASE_AGENDA = "http://ortuconnect.atwebpages.com/api/admin/agenda.php";
-
-    // ➕ URL baru untuk kehadiran minggu ini — hanya HADIR
-    private static final String BASE_KEHADIRAN_MINGGU = "http://ortuconnect.atwebpages.com/api/kehadiran_minggu.php";
 
     @Nullable
     @Override
@@ -63,6 +60,7 @@ public class DashboardFragment extends Fragment {
             return;
         }
 
+        // Inisialisasi Views
         tvNamaSiswa = view.findViewById(R.id.tv_nama_siswa);
         tvKelas = view.findViewById(R.id.tv_kelas);
         tvJadwal = view.findViewById(R.id.tv_jadwal_hari_ini);
@@ -70,6 +68,7 @@ public class DashboardFragment extends Fragment {
         tvIzin = view.findViewById(R.id.tv_izin_status);
         imgProfile = view.findViewById(R.id.imgProfile);
 
+        // Card Listeners
         view.findViewById(R.id.card_kehadiran).setOnClickListener(v -> navigateTo("absensi"));
         view.findViewById(R.id.card_status_izin).setOnClickListener(v -> navigateTo("perizinan"));
         view.findViewById(R.id.card_jadwal).setOnClickListener(v -> navigateTo("kalender"));
@@ -80,10 +79,13 @@ public class DashboardFragment extends Fragment {
 
     private void loadProfile() {
         String url = BASE_PROFILE + "?username=" + usernameOrtu;
+        Log.d(TAG, "Loading profile: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
+                        Log.d(TAG, "Profile Response: " + response.toString());
+
                         if (response.getBoolean("success")) {
                             JSONObject d = response.getJSONObject("data");
 
@@ -95,145 +97,178 @@ public class DashboardFragment extends Fragment {
                             tvKelas.setText(kelasSiswa.toUpperCase());
                             updateProfileIcon(gender);
 
+                            // Load data lainnya
                             loadJadwalHariIni();
-                            loadKehadiran();
+                            loadKehadiranMingguIni();
                             loadIzinTerbaru();
                             loadAgendaTerbaru();
 
-                            // ➕ TAMBAHAN — tampilkan hanya HADIR minggu ini bos
-                            loadKehadiranMingguIni();
-
-                        } else Toast.makeText(getContext(), "Profil tidak ditemukan", Toast.LENGTH_SHORT).show();
+                        } else {
+                            String msg = response.optString("message", "Profil tidak ditemukan");
+                            Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "Profile failed: " + msg);
+                        }
 
                     } catch (JSONException e) {
-                        Log.e("DashboardFragment", "JSON Error: " + e.getMessage());
+                        Log.e(TAG, "JSON Parse Error: " + e.getMessage());
+                        Toast.makeText(getContext(), "Error parsing data", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> Toast.makeText(getContext(), "Koneksi gagal", Toast.LENGTH_SHORT).show());
+                error -> {
+                    String errorMsg = error.getMessage() != null ? error.getMessage() : "Unknown error";
+                    Log.e(TAG, "Profile Network Error: " + errorMsg);
+                    Toast.makeText(getContext(), "Koneksi gagal: " + errorMsg, Toast.LENGTH_SHORT).show();
+                });
 
         requestQueue.add(request);
     }
 
     private void loadJadwalHariIni() {
         String url = BASE_JADWAL + "?kelas=" + kelasSiswa;
+        Log.d(TAG, "Loading jadwal: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 res -> {
                     try {
+                        Log.d(TAG, "Jadwal Response: " + res.toString());
+
                         if (res.getBoolean("success")) {
-                            tvJadwal.setText("Hari " +
+                            String jadwalText = "Hari " +
                                     res.getString("hari") + ", " +
-                                    res.getString("kegiatan"));
+                                    res.getString("kegiatan");
+                            tvJadwal.setText(jadwalText);
+                            Log.d(TAG, "Jadwal set: " + jadwalText);
+                        } else {
+                            tvJadwal.setText("Tidak ada jadwal hari ini");
+                            Log.w(TAG, "Jadwal not found");
                         }
-                    } catch (Exception ignored) {}
+                    } catch (JSONException e) {
+                        tvJadwal.setText("Error parsing jadwal");
+                        Log.e(TAG, "Jadwal Parse Error: " + e.getMessage());
+                    }
                 },
-                err -> tvJadwal.setText("Tidak ada jadwal"));
+                err -> {
+                    tvJadwal.setText("Gagal memuat jadwal");
+                    Log.e(TAG, "Jadwal Network Error: " + err.toString());
+                });
 
         requestQueue.add(request);
     }
 
-    private void loadKehadiran() {
-        String url = BASE_KEHADIRAN + "?username=" + usernameOrtu;
+    private void loadKehadiranMingguIni() {
+        String url = BASE_KEHADIRAN_MINGGU + "?username=" + usernameOrtu;
+        Log.d(TAG, "Loading kehadiran minggu: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 res -> {
                     try {
+                        Log.d(TAG, "Kehadiran Response: " + res.toString());
+
                         if (res.getBoolean("success")) {
-                            int hadir = res.getInt("hadir");
-                            int total = res.getInt("total");
-                            tvKehadiran.setText(hadir + " dari " + total + " hari hadir");
+                            int hadirMinggu = res.getInt("hadir");
+                            String kehadiranText = "Hadir minggu ini: " + hadirMinggu + " hari";
+                            tvKehadiran.setText(kehadiranText);
+                            Log.d(TAG, "Kehadiran set: " + kehadiranText);
+                        } else {
+                            tvKehadiran.setText("Belum ada data minggu ini");
+                            Log.w(TAG, "Kehadiran data not found");
                         }
-                    } catch (Exception ignored) {}
+
+                    } catch (JSONException e) {
+                        tvKehadiran.setText("Error parsing kehadiran");
+                        Log.e(TAG, "Kehadiran Parse Error: " + e.getMessage());
+                    }
                 },
-                err -> tvKehadiran.setText("Belum ada data"));
+                err -> {
+                    tvKehadiran.setText("Gagal memuat kehadiran");
+                    Log.e(TAG, "Kehadiran Network Error: " + err.toString());
+                });
 
         requestQueue.add(request);
     }
 
     private void loadIzinTerbaru() {
         String url = BASE_IZIN + "?username=" + usernameOrtu;
+        Log.d(TAG, "Loading izin: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 res -> {
                     try {
+                        Log.d(TAG, "Izin Response: " + res.toString());
+
                         if (res.getBoolean("success")) {
-                            tvIzin.setText("Izin " +
+                            String izinText = "Izin " +
                                     res.getString("status") +
-                                    ": " + res.getString("tanggal"));
+                                    ": " + res.getString("tanggal");
+                            tvIzin.setText(izinText);
+                            Log.d(TAG, "Izin set: " + izinText);
+                        } else {
+                            tvIzin.setText("Belum ada izin terbaru");
+                            Log.w(TAG, "Izin data not found");
                         }
-                    } catch (Exception ignored) {}
+                    } catch (JSONException e) {
+                        tvIzin.setText("Error parsing izin");
+                        Log.e(TAG, "Izin Parse Error: " + e.getMessage());
+                    }
                 },
-                err -> tvIzin.setText("Belum ada izin"));
+                err -> {
+                    tvIzin.setText("Gagal memuat izin");
+                    Log.e(TAG, "Izin Network Error: " + err.toString());
+                });
 
         requestQueue.add(request);
     }
 
     private void loadAgendaTerbaru() {
         String url = BASE_AGENDA + "?month=11&year=2025";
+        Log.d(TAG, "Loading agenda: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 res -> {
                     try {
+                        Log.d(TAG, "Agenda Response: " + res.toString());
+
                         if (res.getString("status").equals("success")) {
-
                             if (res.getJSONArray("data").length() > 0) {
-
                                 JSONObject d = res.getJSONArray("data").getJSONObject(0);
-
                                 String kegiatan = d.getString("nama_kegiatan");
                                 String tanggal = d.getString("tanggal");
 
-                                tvJadwal.setText(kegiatan + "\nTanggal: " + tanggal);
+                                String agendaText = kegiatan + "\nTanggal: " + tanggal;
+
+                                // ⚠️ PENTING: Gunakan TextView terpisah untuk pengumuman
+                                // Jika ingin tampil di tvJadwal, maka akan timpa jadwal hari ini
+                                // Lebih baik buat TextView baru: tvPengumuman
+
+                                // Sementara pakai Toast atau Log
+                                Toast.makeText(getContext(), "Agenda: " + agendaText, Toast.LENGTH_LONG).show();
+                                Log.d(TAG, "Agenda: " + agendaText);
+
+                                // Jika sudah ada tvPengumuman:
+                                // tvPengumuman.setText(agendaText);
                             } else {
-                                tvJadwal.setText("Tidak ada agenda");
+                                Log.w(TAG, "No agenda data");
                             }
-
                         } else {
-                            tvJadwal.setText("Agenda tidak ditemukan");
+                            Log.w(TAG, "Agenda status failed");
                         }
-                    } catch (Exception e) {
-                        tvJadwal.setText("Gagal parsing agenda");
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Agenda Parse Error: " + e.getMessage());
                     }
                 },
-                err -> tvJadwal.setText("Gagal memuat agenda"));
-
-        requestQueue.add(request);
-    }
-
-    // ============================================
-    //    ➕ KEHADIRAN MINGGU INI — HANYA HADIR
-    // ============================================
-    private void loadKehadiranMingguIni() {
-
-        String url = BASE_KEHADIRAN_MINGGU + "?username=" + usernameOrtu;
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                res -> {
-                    try {
-
-                        if (res.getBoolean("success")) {
-
-                            int hadirMinggu = res.getInt("hadir");
-
-                            // → tampilkan hanya hadir
-                            tvKehadiran.setText("Hadir minggu ini: " + hadirMinggu + " hari");
-
-                        } else {
-                            tvKehadiran.setText("Belum ada data minggu ini");
-                        }
-
-                    } catch (Exception e) {
-                        tvKehadiran.setText("Gagal membaca data");
-                    }
-                },
-                err -> tvKehadiran.setText("Gagal memuat"));
+                err -> {
+                    Log.e(TAG, "Agenda Network Error: " + err.toString());
+                });
 
         requestQueue.add(request);
     }
 
     private void updateProfileIcon(String gender) {
-        if (gender.equalsIgnoreCase("perempuan")) imgProfile.setImageResource(R.drawable.icon_cewe);
-        else imgProfile.setImageResource(R.drawable.icon_cowo);
+        if (gender.equalsIgnoreCase("perempuan")) {
+            imgProfile.setImageResource(R.drawable.icon_cewe);
+        } else {
+            imgProfile.setImageResource(R.drawable.icon_cowo);
+        }
     }
 
     private void navigateTo(String target) {

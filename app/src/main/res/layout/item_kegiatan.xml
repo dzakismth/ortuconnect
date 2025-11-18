@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="4dp"
     app:cardBackgroundColor="@android:color/white">
 
     <LinearLayout
@@ -16,42 +17,57 @@
         android:padding="12dp"
         android:gravity="center_vertical">
 
+        <!-- Waktu (opsional, bisa dikosongkan atau dihapus) -->
         <TextView
             android:id="@+id/tv_kegiatan_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="HH:MM"
-            android:fontFamily="@font/fontutama"
-            android:textColor="@color/biru"
+            android:text=""
             android:textSize="12sp"
             android:textStyle="bold"
             android:layout_marginEnd="12dp"
+            android:visibility="gone"
             tools:text="10:45" />
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
 
+            <!-- Judul Kegiatan -->
             <TextView
                 android:id="@+id/tv_kegiatan_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Rapat Persiapan Ujian Tengah Semester"
-                android:fontFamily="@font/fontutama"
-                android:textColor="@color/biru"
-                android:textSize="14sp"
+                android:text="Judul Kegiatan"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="2dp"/>
+                android:layout_marginBottom="4dp"
+                tools:text="Rapat Persiapan Ujian" />
 
+            <!-- Tanggal -->
             <TextView
                 android:id="@+id/tv_kegiatan_detail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Ruang Guru Lantai 2"
-                android:fontFamily="@font/fontstandar"
-                android:textColor="@color/blue_dark"
-                android:textSize="12sp"/>
+                android:text="Detail"
+                android:textColor="@android:color/black"
+                android:textSize="14sp"
+                android:layout_marginBottom="4dp"
+                tools:text="18 November 2025" />
+
+            <!-- Deskripsi -->
+            <TextView
+                android:id="@+id/tv_kegiatan_deskripsi"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Deskripsi"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="13sp"
+                tools:text="Deskripsi kegiatan" />
         </LinearLayout>
     </LinearLayout>
+
 </androidx.cardview.widget.CardView>

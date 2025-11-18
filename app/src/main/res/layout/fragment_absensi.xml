@@ -93,7 +93,6 @@
                     android:id="@+id/spinner_bulan"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:entries="@array/months_array"
                     android:prompt="@string/pilih_bulan"
                     android:background="@drawable/rounded_dropdown_background"
                     android:layout_marginStart="16dp"
@@ -104,17 +103,37 @@
                     app:layout_constraintHorizontal_bias="1.0" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- RecyclerView untuk Daftar Absensi -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_absensi_list"
+            <!-- Frame Layout untuk RecyclerView dan Empty State -->
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                android:clipToPadding="false"
-                android:paddingBottom="16dp"
-                tools:listitem="@layout/item_kegiatan"
-                tools:itemCount="8" />
+                android:layout_weight="1">
+
+                <!-- RecyclerView untuk Daftar Absensi -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_absensi_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    android:clipToPadding="false"
+                    android:paddingBottom="80dp"
+                    tools:listitem="@layout/item_kegiatan"
+                    tools:itemCount="8" />
+
+                <!-- Empty State -->
+                <TextView
+                    android:id="@+id/tv_empty_state"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="Belum ada data absensi"
+                    android:fontFamily="@font/fontutama"
+                    android:textColor="@color/biru"
+                    android:textSize="16sp"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
+
+            </FrameLayout>
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>
