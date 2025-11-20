@@ -237,6 +237,12 @@ public class KalenderFragment extends Fragment {
     //                  TAMPILKAN PESAN KOSONG
     // ==========================================================
     private void tampilkanPesanKosong(String pesan) {
+        // ✅ CEK CONTEXT DULU
+        if (getContext() == null) {
+            Log.w("KalenderFragment", "Context null, skip tampilkan pesan");
+            return;
+        }
+
         containerAgenda.removeAllViews();
 
         TextView tvKosong = new TextView(getContext());

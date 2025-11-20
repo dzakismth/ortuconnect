@@ -124,10 +124,10 @@
                         app:tint="@color/ungu" />
 
                     <TextView
-                        android:id="@+id/tv_jadwal_hari_ini"
+                        android:id="@+id/tv_agenda"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Hari Kamis, Memakai Baju Adat"
+                        android:text="N/A"
                         android:fontFamily="@font/fontutama"
                         android:textColor="@color/biru"
                         android:textSize="15sp"

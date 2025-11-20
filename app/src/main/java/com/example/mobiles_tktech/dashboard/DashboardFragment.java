@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,22 +25,28 @@ import com.example.mobiles_tktech.MainActivity;
 import com.example.mobiles_tktech.R;
 import com.example.mobiles_tktech.navigasi.NavigasiCard;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class DashboardFragment extends Fragment {
 
-    private TextView tvNamaSiswa, tvKelas, tvJadwal, tvKehadiran, tvIzin, tvPengumuman;
+    private TextView tvNamaSiswa, tvKelas, tvJadwal, tvKehadiran, tvIzin;
     private ImageView imgProfile;
+
     private RequestQueue requestQueue;
-    private String usernameOrtu, kelasSiswa;
+    private String idSiswa;
+    private String username;
+
+    // Auto refresh variables - FIXED
+    private static final long AUTO_REFRESH_INTERVAL = 5000; // 5 detik
+    private boolean isFragmentVisible = false;
+    private Handler autoRefreshHandler;
+    private Runnable autoRefreshRunnable;
 
     private static final String TAG = "DashboardFragment";
-    private static final String BASE_PROFILE = "http://ortuconnect.atwebpages.com/api/profile.php";
-    private static final String BASE_JADWAL = "http://ortuconnect.atwebpages.com/api/jadwal_hari_ini.php";
-    private static final String BASE_KEHADIRAN_MINGGU = "http://ortuconnect.atwebpages.com/api/kehadiran_minggu.php";
-    private static final String BASE_IZIN = "http://ortuconnect.atwebpages.com/api/izin_terbaru.php";
-    private static final String BASE_AGENDA = "http://ortuconnect.atwebpages.com/api/admin/agenda.php";
+    private static final String API_DASHBOARD = "http://ortuconnect.atwebpages.com/api/dashboard.php?id_siswa=";
+    private static final String API_PROFILE = "http://ortuconnect.atwebpages.com/api/profile.php?username=";
 
     @Nullable
     @Override
@@ -52,34 +59,128 @@ public class DashboardFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         requestQueue = Volley.newRequestQueue(requireContext());
-        SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        usernameOrtu = prefs.getString("username", "");
 
-        if (usernameOrtu.isEmpty()) {
+        // Initialize auto refresh handler
+        autoRefreshHandler = new Handler();
+
+        // Ambil username dan id_siswa dari SharedPreferences
+        SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        username = prefs.getString("username", "");
+        idSiswa = prefs.getString("id_siswa", "");
+
+        Log.d(TAG, "Username from prefs: " + username);
+        Log.d(TAG, "ID Siswa from prefs: " + idSiswa);
+
+        // Jika username kosong, langsung logout
+        if (username.isEmpty()) {
             logoutUser();
             return;
         }
 
-        // Inisialisasi Views
         tvNamaSiswa = view.findViewById(R.id.tv_nama_siswa);
         tvKelas = view.findViewById(R.id.tv_kelas);
-        tvJadwal = view.findViewById(R.id.tv_jadwal_hari_ini);
+        tvJadwal = view.findViewById(R.id.tv_agenda);
         tvKehadiran = view.findViewById(R.id.tv_kehadiran_status);
         tvIzin = view.findViewById(R.id.tv_izin_status);
         imgProfile = view.findViewById(R.id.imgProfile);
 
-        // Card Listeners
         view.findViewById(R.id.card_kehadiran).setOnClickListener(v -> navigateTo("absensi"));
         view.findViewById(R.id.card_status_izin).setOnClickListener(v -> navigateTo("perizinan"));
         view.findViewById(R.id.card_jadwal).setOnClickListener(v -> navigateTo("kalender"));
         view.findViewById(R.id.card_profil).setOnClickListener(v -> navigateTo("profil"));
 
-        loadProfile();
+        // Jika id_siswa tidak ada, load profile dulu
+        if (idSiswa.isEmpty()) {
+            loadProfileFirst();
+        } else {
+            loadDashboard();
+        }
     }
 
-    private void loadProfile() {
-        String url = BASE_PROFILE + "?username=" + usernameOrtu;
-        Log.d(TAG, "Loading profile: " + url);
+    @Override
+    public void onResume() {
+        super.onResume();
+        isFragmentVisible = true;
+        Log.d(TAG, "🎯 Fragment RESUMED - starting auto refresh");
+        startAutoRefresh();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isFragmentVisible = false;
+        Log.d(TAG, "🚫 Fragment PAUSED - stopping auto refresh");
+        stopAutoRefresh();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        Log.d(TAG, "🗑️ Fragment DESTROYED - cleaning up");
+        stopAutoRefresh();
+        if (autoRefreshHandler != null) {
+            autoRefreshHandler.removeCallbacksAndMessages(null);
+        }
+    }
+
+    /**
+     * Start auto refresh - FIXED VERSION
+     */
+    private void startAutoRefresh() {
+        if (autoRefreshHandler == null) {
+            autoRefreshHandler = new Handler();
+        }
+
+        // Hapus callback yang mungkin masih aktif
+        stopAutoRefresh();
+
+        // Buat runnable untuk auto refresh
+        autoRefreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isFragmentVisible && idSiswa != null && !idSiswa.isEmpty()) {
+                    Log.d(TAG, "🔄 Auto refresh triggered");
+                    refreshDataSilent();
+
+                    // Schedule next refresh hanya jika fragment masih visible
+                    if (isFragmentVisible && autoRefreshHandler != null) {
+                        autoRefreshHandler.postDelayed(this, AUTO_REFRESH_INTERVAL);
+                        Log.d(TAG, "📅 Next refresh scheduled in " + (AUTO_REFRESH_INTERVAL/1000) + " seconds");
+                    }
+                } else {
+                    Log.d(TAG, "⏸️ Auto refresh skipped - fragment not visible or no ID");
+                }
+            }
+        };
+
+        // Mulai auto refresh
+        if (autoRefreshHandler != null) {
+            autoRefreshHandler.postDelayed(autoRefreshRunnable, AUTO_REFRESH_INTERVAL);
+            Log.d(TAG, "▶️ Auto refresh started successfully");
+        }
+    }
+
+    /**
+     * Stop auto refresh - FIXED VERSION
+     */
+    private void stopAutoRefresh() {
+        Log.d(TAG, "⏹️ Stopping auto refresh");
+        if (autoRefreshHandler != null && autoRefreshRunnable != null) {
+            autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
+        }
+    }
+
+    /**
+     * Refresh data tanpa animation (silent)
+     */
+    private void refreshDataSilent() {
+        Log.d(TAG, "🔄 Silent refresh started");
+        loadDashboard();
+    }
+
+    private void loadProfileFirst() {
+        String url = API_PROFILE + username;
+        Log.d(TAG, "Loading profile first: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
@@ -87,187 +188,157 @@ public class DashboardFragment extends Fragment {
                         Log.d(TAG, "Profile Response: " + response.toString());
 
                         if (response.getBoolean("success")) {
-                            JSONObject d = response.getJSONObject("data");
+                            JSONObject data = response.getJSONObject("data");
+                            idSiswa = data.getString("id_siswa");
 
-                            String nama = d.getString("nama_siswa");
-                            kelasSiswa = d.getString("kelas");
-                            String gender = d.getString("gender");
+                            // Simpan id_siswa ke SharedPreferences untuk penggunaan berikutnya
+                            SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+                            prefs.edit().putString("id_siswa", idSiswa).apply();
 
-                            tvNamaSiswa.setText(nama);
-                            tvKelas.setText(kelasSiswa.toUpperCase());
-                            updateProfileIcon(gender);
+                            Log.d(TAG, "ID Siswa obtained: " + idSiswa);
 
-                            // Load data lainnya
-                            loadJadwalHariIni();
-                            loadKehadiranMingguIni();
-                            loadIzinTerbaru();
-                            loadAgendaTerbaru();
+                            // Setelah dapat id_siswa, load dashboard
+                            loadDashboard();
 
                         } else {
-                            String msg = response.optString("message", "Profil tidak ditemukan");
-                            Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, "Profile failed: " + msg);
+                            Toast.makeText(getContext(), "Profil tidak ditemukan", Toast.LENGTH_SHORT).show();
+                            logoutUser();
                         }
 
-                    } catch (JSONException e) {
-                        Log.e(TAG, "JSON Parse Error: " + e.getMessage());
-                        Toast.makeText(getContext(), "Error parsing data", Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Profile Parse Error: " + e.getMessage());
+                        Toast.makeText(getContext(), "Error memuat profil", Toast.LENGTH_SHORT).show();
+                        logoutUser();
                     }
                 },
                 error -> {
-                    String errorMsg = error.getMessage() != null ? error.getMessage() : "Unknown error";
-                    Log.e(TAG, "Profile Network Error: " + errorMsg);
-                    Toast.makeText(getContext(), "Koneksi gagal: " + errorMsg, Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Profile Network Error: " + error.toString());
+                    Toast.makeText(getContext(), "Gagal memuat profil", Toast.LENGTH_SHORT).show();
+                    logoutUser();
                 });
 
         requestQueue.add(request);
     }
 
-    private void loadJadwalHariIni() {
-        String url = BASE_JADWAL + "?kelas=" + kelasSiswa;
-        Log.d(TAG, "Loading jadwal: " + url);
+    private void loadDashboard() {
+        String url = API_DASHBOARD + idSiswa;
+        Log.d(TAG, "Dashboard API: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 res -> {
                     try {
-                        Log.d(TAG, "Jadwal Response: " + res.toString());
+                        Log.d(TAG, "=== RAW DASHBOARD RESPONSE ===");
+                        Log.d(TAG, res.toString(2)); // Pretty print JSON
 
-                        if (res.getBoolean("success")) {
-                            String jadwalText = "Hari " +
-                                    res.getString("hari") + ", " +
-                                    res.getString("kegiatan");
-                            tvJadwal.setText(jadwalText);
-                            Log.d(TAG, "Jadwal set: " + jadwalText);
-                        } else {
-                            tvJadwal.setText("Tidak ada jadwal hari ini");
-                            Log.w(TAG, "Jadwal not found");
-                        }
-                    } catch (JSONException e) {
-                        tvJadwal.setText("Error parsing jadwal");
-                        Log.e(TAG, "Jadwal Parse Error: " + e.getMessage());
-                    }
-                },
-                err -> {
-                    tvJadwal.setText("Gagal memuat jadwal");
-                    Log.e(TAG, "Jadwal Network Error: " + err.toString());
-                });
-
-        requestQueue.add(request);
-    }
-
-    private void loadKehadiranMingguIni() {
-        String url = BASE_KEHADIRAN_MINGGU + "?username=" + usernameOrtu;
-        Log.d(TAG, "Loading kehadiran minggu: " + url);
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                res -> {
-                    try {
-                        Log.d(TAG, "Kehadiran Response: " + res.toString());
-
-                        if (res.getBoolean("success")) {
-                            int hadirMinggu = res.getInt("hadir");
-                            String kehadiranText = "Hadir minggu ini: " + hadirMinggu + " hari";
-                            tvKehadiran.setText(kehadiranText);
-                            Log.d(TAG, "Kehadiran set: " + kehadiranText);
-                        } else {
-                            tvKehadiran.setText("Belum ada data minggu ini");
-                            Log.w(TAG, "Kehadiran data not found");
+                        if (!res.getString("status").equals("success")) {
+                            String message = res.optString("message", "Data tidak ditemukan");
+                            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                            return;
                         }
 
-                    } catch (JSONException e) {
-                        tvKehadiran.setText("Error parsing kehadiran");
-                        Log.e(TAG, "Kehadiran Parse Error: " + e.getMessage());
-                    }
-                },
-                err -> {
-                    tvKehadiran.setText("Gagal memuat kehadiran");
-                    Log.e(TAG, "Kehadiran Network Error: " + err.toString());
-                });
+                        // === PROFIL ===
+                        if (res.has("profil")) {
+                            JSONObject p = res.getJSONObject("profil");
+                            tvNamaSiswa.setText(p.optString("nama_siswa", "Nama tidak tersedia"));
+                            tvKelas.setText(p.optString("kelas", "Kelas tidak tersedia"));
 
-        requestQueue.add(request);
-    }
-
-    private void loadIzinTerbaru() {
-        String url = BASE_IZIN + "?username=" + usernameOrtu;
-        Log.d(TAG, "Loading izin: " + url);
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                res -> {
-                    try {
-                        Log.d(TAG, "Izin Response: " + res.toString());
-
-                        if (res.getBoolean("success")) {
-                            String izinText = "Izin " +
-                                    res.getString("status") +
-                                    ": " + res.getString("tanggal");
-                            tvIzin.setText(izinText);
-                            Log.d(TAG, "Izin set: " + izinText);
-                        } else {
-                            tvIzin.setText("Belum ada izin terbaru");
-                            Log.w(TAG, "Izin data not found");
-                        }
-                    } catch (JSONException e) {
-                        tvIzin.setText("Error parsing izin");
-                        Log.e(TAG, "Izin Parse Error: " + e.getMessage());
-                    }
-                },
-                err -> {
-                    tvIzin.setText("Gagal memuat izin");
-                    Log.e(TAG, "Izin Network Error: " + err.toString());
-                });
-
-        requestQueue.add(request);
-    }
-
-    private void loadAgendaTerbaru() {
-        String url = BASE_AGENDA + "?month=11&year=2025";
-        Log.d(TAG, "Loading agenda: " + url);
-
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                res -> {
-                    try {
-                        Log.d(TAG, "Agenda Response: " + res.toString());
-
-                        if (res.getString("status").equals("success")) {
-                            if (res.getJSONArray("data").length() > 0) {
-                                JSONObject d = res.getJSONArray("data").getJSONObject(0);
-                                String kegiatan = d.getString("nama_kegiatan");
-                                String tanggal = d.getString("tanggal");
-
-                                String agendaText = kegiatan + "\nTanggal: " + tanggal;
-
-                                // ⚠️ PENTING: Gunakan TextView terpisah untuk pengumuman
-                                // Jika ingin tampil di tvJadwal, maka akan timpa jadwal hari ini
-                                // Lebih baik buat TextView baru: tvPengumuman
-
-                                // Sementara pakai Toast atau Log
-                                Toast.makeText(getContext(), "Agenda: " + agendaText, Toast.LENGTH_LONG).show();
-                                Log.d(TAG, "Agenda: " + agendaText);
-
-                                // Jika sudah ada tvPengumuman:
-                                // tvPengumuman.setText(agendaText);
+                            // Set icon berdasarkan gender jika ada
+                            String gender = p.optString("jenis_kelamin", "").toLowerCase();
+                            if (gender.equals("perempuan")) {
+                                imgProfile.setImageResource(R.drawable.icon_cewe);
                             } else {
-                                Log.w(TAG, "No agenda data");
+                                imgProfile.setImageResource(R.drawable.icon_cowo);
+                            }
+                        }
+
+                        // === AGENDA BULAN INI ===
+                        if (res.has("agenda")) {
+                            JSONArray agendaArr = res.getJSONArray("agenda");
+                            if (agendaArr.length() > 0) {
+                                JSONObject a = agendaArr.getJSONObject(0);
+                                String kegiatan = a.optString("nama_kegiatan", "Kegiatan");
+                                String tanggal = a.optString("tanggal", "");
+
+                                // Format tanggal jika perlu
+                                if (!tanggal.isEmpty()) {
+                                    String formattedDate = formatTanggal(tanggal);
+                                    tvJadwal.setText(kegiatan + " - " + formattedDate);
+                                } else {
+                                    tvJadwal.setText(kegiatan);
+                                }
+                            } else {
+                                tvJadwal.setText("Tidak ada agenda bulan ini");
                             }
                         } else {
-                            Log.w(TAG, "Agenda status failed");
+                            tvJadwal.setText("Agenda tidak tersedia");
                         }
+
+                        // === KEHADIRAN MINGGU INI ===
+                        if (res.has("kehadiran_minggu_ini")) {
+                            JSONObject k = res.getJSONObject("kehadiran_minggu_ini");
+                            String hadir = k.optString("hadir", "0");
+                            String total = k.optString("total_hari", "5");
+                            tvKehadiran.setText("Hadir: " + hadir + "/" + total + " hari");
+                        } else {
+                            tvKehadiran.setText("Data kehadiran tidak tersedia");
+                        }
+
+                        // === IZIN TERBARU ===
+                        if (res.has("izin_terbaru")) {
+                            JSONObject izinObj = res.getJSONObject("izin_terbaru");
+
+                            // Cek jika ada data izin
+                            if (!izinObj.isNull("status") && !izinObj.getString("status").equals("null")) {
+                                String status = izinObj.optString("status", "Pending");
+                                String tanggal = izinObj.optString("tanggal_pengajuan", "");
+                                String alasan = izinObj.optString("alasan", "");
+
+                                if (!tanggal.isEmpty()) {
+                                    String formattedDate = formatTanggal(tanggal);
+                                    tvIzin.setText(status + " - " + formattedDate);
+                                } else {
+                                    tvIzin.setText(status);
+                                }
+
+                                // Tambahkan alasan jika ada
+                                if (!alasan.isEmpty()) {
+                                    tvIzin.append("\n" + alasan);
+                                }
+                            } else {
+                                tvIzin.setText("Tidak ada izin terbaru");
+                            }
+                        } else {
+                            tvIzin.setText("Data izin tidak tersedia");
+                        }
+
                     } catch (JSONException e) {
-                        Log.e(TAG, "Agenda Parse Error: " + e.getMessage());
+                        Log.e(TAG, "Parse Error: " + e.getMessage());
+                        e.printStackTrace();
+                        Toast.makeText(getContext(), "Error parsing data dashboard", Toast.LENGTH_SHORT).show();
                     }
                 },
                 err -> {
-                    Log.e(TAG, "Agenda Network Error: " + err.toString());
-                });
+                    Log.e(TAG, "Network Error: " + err.toString());
+                    if (err.networkResponse != null) {
+                        Log.e(TAG, "Status Code: " + err.networkResponse.statusCode);
+                    }
+                    Toast.makeText(getContext(), "Gagal memuat dashboard", Toast.LENGTH_SHORT).show();
+                }
+        );
 
         requestQueue.add(request);
     }
 
-    private void updateProfileIcon(String gender) {
-        if (gender.equalsIgnoreCase("perempuan")) {
-            imgProfile.setImageResource(R.drawable.icon_cewe);
-        } else {
-            imgProfile.setImageResource(R.drawable.icon_cowo);
+    /**
+     * Format tanggal dari YYYY-MM-DD ke format Indonesia
+     */
+    private String formatTanggal(String tanggal) {
+        try {
+            java.text.SimpleDateFormat inputFormat = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+            java.text.SimpleDateFormat outputFormat = new java.text.SimpleDateFormat("dd MMMM yyyy", new java.util.Locale("id", "ID"));
+            return outputFormat.format(inputFormat.parse(tanggal));
+        } catch (Exception e) {
+            return tanggal;
         }
     }
 
@@ -284,6 +355,8 @@ public class DashboardFragment extends Fragment {
         Intent i = new Intent(getActivity(), MainActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(i);
-        requireActivity().finish();
+        if (getActivity() != null) {
+            getActivity().finish();
+        }
     }
 }

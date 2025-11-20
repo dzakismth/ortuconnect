@@ -76,17 +76,6 @@
                     android:paddingBottom="8dp"
                     android:paddingHorizontal="8dp">
 
-                    <TextView
-                        android:id="@+id/tv_current_month"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Oktober 2025"
-                        android:textColor="@android:color/black"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginBottom="8dp"/>
-
                     <CalendarView
                         android:id="@+id/calendar_view"
                         android:layout_width="match_parent"

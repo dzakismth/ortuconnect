@@ -41,11 +41,7 @@ public class AbsensiFragment extends Fragment {
 
     private static final String TAG = "AbsensiFragment";
     private static final String BASE_PROFILE = "http://ortuconnect.atwebpages.com/api/profile.php";
-
-    // ⚠️ GUNAKAN ENDPOINT YANG BENAR - sesuaikan dengan API Anda
-    // Pilih salah satu yang sesuai:
-    private static final String BASE_ABSENSI = "http://ortuconnect.atwebpages.com/api/kehadiran_detail.php";
-    // private static final String BASE_ABSENSI = "http://ortuconnect.atwebpages.com/api/admin/absensi.php";
+    private static final String BASE_ABSENSI = "http://ortuconnect.atwebpages.com/api/admin/absensi.php";
 
     Spinner spinnerBulan;
     RecyclerView rvAbsensi;
@@ -58,29 +54,29 @@ public class AbsensiFragment extends Fragment {
     int selectedYear;
     int selectedMonth;
 
+    // Tambahkan flag untuk melacak status fragment
+    private boolean isFragmentActive = false;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_absensi, container, false);
+
+        isFragmentActive = true;
 
         // Get username dari SharedPreferences
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         usernameOrtu = prefs.getString("username", "");
 
         if (usernameOrtu.isEmpty()) {
-            Toast.makeText(getContext(), "Username tidak ditemukan", Toast.LENGTH_SHORT).show();
+            showToast("Username tidak ditemukan");
             return view;
         }
 
-        // Back button
+        // Back button - PERBAIKAN DI SINI
         ImageButton btnBack = view.findViewById(R.id.btn_back_header);
         btnBack.setOnClickListener(v -> {
-            if (getActivity() instanceof com.example.mobiles_tktech.navigasi.NavigasiCard) {
-                ((com.example.mobiles_tktech.navigasi.NavigasiCard) getActivity()).navigateToDashboard();
-
-                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav_card);
-                bottomNav.setSelectedItemId(R.id.nav_beranda);
-            }
+            handleBackButton();
         });
 
         spinnerBulan = view.findViewById(R.id.spinner_bulan);
@@ -121,6 +117,58 @@ public class AbsensiFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        isFragmentActive = false;
+    }
+
+    // ==========================================================
+    //                  HANDLE BACK BUTTON - METODE BARU
+    // ==========================================================
+    private void handleBackButton() {
+        try {
+            // Coba metode 1: Navigate menggunakan NavigasiCard
+            if (getActivity() instanceof com.example.mobiles_tktech.navigasi.NavigasiCard) {
+                ((com.example.mobiles_tktech.navigasi.NavigasiCard) getActivity()).navigateToDashboard();
+
+                // Juga update bottom navigation
+                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav_card);
+                if (bottomNav != null) {
+                    bottomNav.setSelectedItemId(R.id.nav_beranda);
+                }
+            }
+            // Metode 2: Gunakan requireActivity() untuk finish
+            else if (getActivity() != null) {
+                getActivity().onBackPressed();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling back button: " + e.getMessage());
+
+            // Metode 3: Fallback sederhana
+            try {
+                if (getActivity() != null) {
+                    getActivity().onBackPressed();
+                }
+            } catch (Exception ex) {
+                Log.e(TAG, "Fallback also failed: " + ex.getMessage());
+            }
+        }
+    }
+
+    // ==========================================================
+    //                  SAFE TOAST METHOD
+    // ==========================================================
+    private void showToast(String message) {
+        if (isFragmentActive && getContext() != null) {
+            try {
+                Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                Log.e(TAG, "Error showing toast: " + e.getMessage());
+            }
+        }
+    }
+
     // ==========================================================
     //                  SETUP SPINNER BULAN
     // ==========================================================
@@ -143,11 +191,17 @@ public class AbsensiFragment extends Fragment {
     //                  LOAD PROFILE (GET ID SISWA)
     // ==========================================================
     private void loadProfile() {
+        if (!isFragmentActive || getContext() == null) {
+            return;
+        }
+
         String url = BASE_PROFILE + "?username=" + usernameOrtu;
         Log.d(TAG, "Loading profile: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
+                    if (!isFragmentActive) return;
+
                     try {
                         Log.d(TAG, "Profile Response: " + response.toString());
 
@@ -161,71 +215,71 @@ public class AbsensiFragment extends Fragment {
                             loadAbsensi();
 
                         } else {
-                            Toast.makeText(getContext(), "Profil tidak ditemukan", Toast.LENGTH_SHORT).show();
+                            showToast("Profil tidak ditemukan");
                         }
 
                     } catch (Exception e) {
                         Log.e(TAG, "Profile Parse Error: " + e.getMessage());
-                        Toast.makeText(getContext(), "Error parsing profile", Toast.LENGTH_SHORT).show();
+                        showToast("Error parsing profile");
                     }
                 },
                 error -> {
+                    if (!isFragmentActive) return;
+
                     Log.e(TAG, "Profile Network Error: " + error.toString());
-                    Toast.makeText(getContext(), "Gagal memuat profil", Toast.LENGTH_SHORT).show();
+                    showToast("Gagal memuat profil");
                 });
 
         Volley.newRequestQueue(requireContext()).add(request);
     }
 
     // ==========================================================
-    //                  LOAD ABSENSI
+    //                  LOAD ABSENSI (API BARU)
     // ==========================================================
     private void loadAbsensi() {
+        if (!isFragmentActive || getContext() == null) {
+            return;
+        }
+
         if (idSiswa == null || idSiswa.isEmpty()) {
             Log.e(TAG, "ID Siswa belum tersedia");
             return;
         }
 
-        // Format: bulan (1-12)
-        int bulan = selectedMonth + 1;
+        // Format bulan untuk API baru: YYYY-MM (contoh: 2025-11)
+        String bulanTahun = String.format(Locale.getDefault(), "%d-%02d", selectedYear, (selectedMonth + 1));
 
-        String url = BASE_ABSENSI + "?id_siswa=" + idSiswa
-                + "&bulan=" + bulan
-                + "&tahun=" + selectedYear;
+        String url = BASE_ABSENSI + "?id_siswa=" + idSiswa + "&bulan=" + bulanTahun;
 
-        Log.d(TAG, "=== LOADING ABSENSI ===");
+        Log.d(TAG, "=== LOADING ABSENSI (API BARU) ===");
         Log.d(TAG, "URL: " + url);
         Log.d(TAG, "ID Siswa: " + idSiswa);
-        Log.d(TAG, "Bulan: " + bulan);
-        Log.d(TAG, "Tahun: " + selectedYear);
+        Log.d(TAG, "Bulan-Tahun: " + bulanTahun);
 
         RequestQueue queue = Volley.newRequestQueue(requireContext());
 
-        // Coba gunakan StringRequest dulu untuk lihat response mentah
         StringRequest request = new StringRequest(Request.Method.GET, url,
                 response -> {
+                    if (!isFragmentActive) return;
+
                     try {
-                        Log.d(TAG, "=== RAW RESPONSE ===");
+                        Log.d(TAG, "=== RAW RESPONSE (API BARU) ===");
                         Log.d(TAG, response);
 
                         listAbsensi.clear();
 
                         JSONObject json = new JSONObject(response);
 
-                        // Cek berbagai format response yang mungkin
-                        if (json.has("success") && json.getBoolean("success")) {
-                            JSONArray arr = json.getJSONArray("data");
-                            Log.d(TAG, "Jumlah data: " + arr.length());
+                        // Handle response berdasarkan format baru
+                        if (json.has("status") && json.getString("status").equals("success")) {
+                            JSONArray riwayatArray = json.getJSONArray("riwayat");
+                            Log.d(TAG, "Jumlah data riwayat: " + riwayatArray.length());
 
-                            for (int i = 0; i < arr.length(); i++) {
-                                JSONObject o = arr.getJSONObject(i);
+                            for (int i = 0; i < riwayatArray.length(); i++) {
+                                JSONObject o = riwayatArray.getJSONObject(i);
 
-                                // Coba berbagai kemungkinan nama field
-                                String tanggal = o.optString("tanggal",
-                                        o.optString("date", ""));
-                                String status = o.optString("status",
-                                        o.optString("keterangan",
-                                                o.optString("kehadiran", "")));
+                                String tanggal = o.getString("tanggal");
+                                String status = o.getString("status");
 
                                 Log.d(TAG, "Item " + i + " - Tanggal: " + tanggal + ", Status: " + status);
 
@@ -256,45 +310,17 @@ public class AbsensiFragment extends Fragment {
                                 Log.d(TAG, "Menampilkan " + listAbsensi.size() + " data");
                             }
 
-                        } else if (json.has("status") && json.getString("status").equals("success")) {
-                            // Format alternatif dengan "status": "success"
-                            JSONArray arr = json.getJSONArray("data");
-                            Log.d(TAG, "Jumlah data (format 2): " + arr.length());
-
-                            for (int i = 0; i < arr.length(); i++) {
-                                JSONObject o = arr.getJSONObject(i);
-                                String tanggal = o.optString("tanggal", o.optString("date", ""));
-                                String status = o.optString("status", o.optString("keterangan", ""));
-
-                                if (!tanggal.isEmpty() && !status.isEmpty()) {
-                                    listAbsensi.add(new AbsensiModel(tanggal, status));
-                                }
-                            }
-
-                            Collections.sort(listAbsensi, new Comparator<AbsensiModel>() {
-                                @Override
-                                public int compare(AbsensiModel a1, AbsensiModel a2) {
-                                    return a2.tanggal.compareTo(a1.tanggal);
-                                }
-                            });
-
-                            adapter.notifyDataSetChanged();
-
-                            if (listAbsensi.isEmpty()) {
-                                rvAbsensi.setVisibility(View.GONE);
-                                tvEmptyState.setVisibility(View.VISIBLE);
-                                tvEmptyState.setText("Tidak ada data absensi bulan ini");
-                            } else {
-                                rvAbsensi.setVisibility(View.VISIBLE);
-                                tvEmptyState.setVisibility(View.GONE);
-                            }
-
                         } else {
-                            // Response tidak sesuai format
-                            Log.e(TAG, "Format response tidak dikenali");
+                            // Response tidak success
+                            Log.e(TAG, "Response status tidak success");
                             rvAbsensi.setVisibility(View.GONE);
                             tvEmptyState.setVisibility(View.VISIBLE);
                             tvEmptyState.setText("Tidak ada data absensi");
+
+                            // Tampilkan pesan error jika ada
+                            if (json.has("message")) {
+                                showToast(json.getString("message"));
+                            }
                         }
 
                     } catch (Exception e) {
@@ -305,10 +331,12 @@ public class AbsensiFragment extends Fragment {
                         rvAbsensi.setVisibility(View.GONE);
                         tvEmptyState.setVisibility(View.VISIBLE);
                         tvEmptyState.setText("Error parsing data");
-                        Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        showToast("Error: " + e.getMessage());
                     }
                 },
                 error -> {
+                    if (!isFragmentActive) return;
+
                     Log.e(TAG, "=== NETWORK ERROR ===");
                     if (error.networkResponse != null) {
                         Log.e(TAG, "Status Code: " + error.networkResponse.statusCode);
@@ -319,7 +347,7 @@ public class AbsensiFragment extends Fragment {
                     rvAbsensi.setVisibility(View.GONE);
                     tvEmptyState.setVisibility(View.VISIBLE);
                     tvEmptyState.setText("Gagal memuat data");
-                    Toast.makeText(getContext(), "Gagal memuat: " + error.toString(), Toast.LENGTH_LONG).show();
+                    showToast("Gagal memuat: " + error.toString());
                 }
         );
 
