@@ -47,27 +47,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         sessionManager = SessionManager(applicationContext)
 
-        val isLoggedIn = sessionManager.isLoggedIn
-        Log.d("MainActivity", "User logged in status: $isLoggedIn")
+        // 🔥 PERBAIKAN: Gunakan isSessionValid() bukan isLoggedIn()
+        val isSessionValid = sessionManager.isSessionValid()
+        Log.d("MainActivity", "Session valid: $isSessionValid")
 
-        if (isLoggedIn) {
+        if (isSessionValid) {
             val username = sessionManager.username
-            val userId = sessionManager.userId
+            Log.d("MainActivity", "Session valid, checking account for: $username")
 
-            if (username.isNullOrEmpty() || userId.isNullOrEmpty()) {
-                Log.w("MainActivity", "Session data incomplete, forcing logout")
-                sessionManager.logoutUser()
-                showLoginScreen()
-            } else {
-                // 🔹 Tambahan fitur: cek apakah akun masih ada di database
-                checkIfAccountStillExists(username)
-            }
+            // Cek apakah akun masih ada di database
+            checkIfAccountStillExists(username!!)
         } else {
-            Log.d("MainActivity", "User not logged in, showing login screen")
+            Log.d("MainActivity", "Session invalid, showing login screen")
+            // Clear session yang rusak
+            sessionManager.clearInvalidSession()
             showLoginScreen()
         }
     }
-
     /** 🔹 Mengecek apakah akun user masih ada di database */
     private fun checkIfAccountStillExists(username: String) {
         val url = "https://ortuconnect.pbltifnganjuk.com/api/profile.php?username=$username"
@@ -122,8 +118,6 @@ fun LoginScreen(sessionManager: SessionManager) {
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
 
-//    val painter = painterResource(id = R.drawable.background_gradient_blue_purple)
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -136,9 +130,7 @@ fun LoginScreen(sessionManager: SessionManager) {
                     )
                 )
             )
-    )
-
-    {
+    ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -212,11 +204,43 @@ fun LoginScreen(sessionManager: SessionManager) {
                                         isLoading = false
                                         Log.d("Login", "Server response: ${response.toString(2)}")
 
+                                        // 🔥 PERBAIKAN: Handle response dengan benar
+                                        val success = response.optBoolean("success", false)
+                                        if (success) {
+                                            // Simpan data user ke session
+                                            val user = response.getJSONObject("user")
+                                            sessionManager.createLoginSession(
+                                                user.getString("username"),  // Parameter 1: username
+                                                user.getString("id_akun"),   // Parameter 2: userId
+                                                user.getString("role")       // Parameter 3: role
+                                            )
+
+                                            Log.d("Login", "Login successful, navigating to dashboard")
+
+                                            // Navigasi ke dashboard
+                                            val intent = Intent(context, NavigasiCard::class.java)
+                                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                            context.startActivity(intent)
+
+                                            // Jika context adalah Activity, bisa panggil finish()
+                                            if (context is ComponentActivity) {
+                                                context.finish()
+                                            }
+                                        } else {
+                                            val message = response.optString("message", "Login gagal")
+                                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                            Log.e("Login", "Login failed: $message")
+                                        }
                                     },
                                     Response.ErrorListener { error ->
                                         isLoading = false
                                         Log.e("Login", "Volley Error: ${error.message}", error)
-                                        Toast.makeText(context, "Gagal koneksi ke server", Toast.LENGTH_LONG).show()
+                                        val errorMessage = when {
+                                            error.networkResponse == null -> "Tidak ada koneksi internet"
+                                            error.networkResponse.statusCode == 500 -> "Server error"
+                                            else -> "Gagal koneksi ke server: ${error.message}"
+                                        }
+                                        Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
                                     }
                                 ) {}
 
