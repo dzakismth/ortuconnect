@@ -40,8 +40,8 @@ import java.util.Locale;
 public class AbsensiFragment extends Fragment {
 
     private static final String TAG = "AbsensiFragment";
-    private static final String BASE_PROFILE = "http://ortuconnect.atwebpages.com/api/profile.php";
-    private static final String BASE_ABSENSI = "http://ortuconnect.atwebpages.com/api/admin/absensi.php";
+    private static final String BASE_PROFILE = "https://ortuconnect.pbltifnganjuk.com/api/profile.php";
+    private static final String BASE_ABSENSI = "https://ortuconnect.pbltifnganjuk.com/api/admin/absensi.php";
 
     Spinner spinnerBulan;
     RecyclerView rvAbsensi;

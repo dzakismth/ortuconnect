@@ -80,7 +80,7 @@ public class KalenderFragment extends Fragment {
     //                 LOAD AGENDA (SEMUA AGENDA BULAN)
     // ==========================================================
     private void loadAgenda(int month, int year) {
-        String url = "http://ortuconnect.atwebpages.com/api/admin/agenda.php?month="
+        String url = "https://ortuconnect.pbltifnganjuk.com/api/admin/agenda.php?month="
                 + month + "&year=" + year;
 
         Log.d("KalenderAgenda", "🌐 Request: " + url);

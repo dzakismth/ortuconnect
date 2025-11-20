@@ -35,6 +35,8 @@ import com.example.mobiles_tktech.navigasi.NavigasiCard
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import com.android.volley.DefaultRetryPolicy
+
 
 
 
@@ -68,7 +70,7 @@ class MainActivity : ComponentActivity() {
 
     /** 🔹 Mengecek apakah akun user masih ada di database */
     private fun checkIfAccountStillExists(username: String) {
-        val url = "http://ortuconnect.atwebpages.com/api/profile.php?username=$username"
+        val url = "https://ortuconnect.pbltifnganjuk.com/api/profile.php?username=$username"
         Log.d("CheckAccount", "Checking account existence for $username")
 
         val request = JsonObjectRequest(
@@ -196,7 +198,7 @@ fun LoginScreen(sessionManager: SessionManager) {
                             isLoading = true
                             Log.d("Login", "Attempting login for username: ${username.trim()}")
 
-                            val url = "http://ortuconnect.atwebpages.com/api/login.php"
+                            val url = "https://ortuconnect.pbltifnganjuk.com/api/login.php"
 
                             try {
                                 val params = JSONObject().apply {
@@ -208,33 +210,8 @@ fun LoginScreen(sessionManager: SessionManager) {
                                     Method.POST, url, params,
                                     Response.Listener { response ->
                                         isLoading = false
-
                                         Log.d("Login", "Server response: ${response.toString(2)}")
 
-                                        val success = response.optBoolean("success", false)
-                                        val message = response.optString("message", "Terjadi kesalahan server")
-
-                                        if (success) {
-                                            val user = response.optJSONObject("user")
-
-                                            if (user != null) {
-                                                val userId = user.optString("id_siswa", "")
-                                                val serverUsername = user.optString("username", username.trim())
-                                                val role = user.optString("role", "")
-
-                                                sessionManager.createLoginSession(serverUsername, userId, role)
-
-                                                Toast.makeText(context, "Login berhasil!", Toast.LENGTH_SHORT).show()
-                                                val intent = Intent(context, NavigasiCard::class.java)
-                                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                                context.startActivity(intent)
-                                                (context as? ComponentActivity)?.finish()
-                                            } else {
-                                                Toast.makeText(context, "Format respons tidak valid", Toast.LENGTH_LONG).show()
-                                            }
-                                        } else {
-                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                        }
                                     },
                                     Response.ErrorListener { error ->
                                         isLoading = false
@@ -243,7 +220,15 @@ fun LoginScreen(sessionManager: SessionManager) {
                                     }
                                 ) {}
 
-                                Volley.newRequestQueue(context).add(request)
+                                request.setShouldCache(false)
+                                request.retryPolicy = DefaultRetryPolicy(
+                                    15000,
+                                    DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                                    DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+                                )
+
+                                Volley.newRequestQueue(context.applicationContext).add(request)
+
                             } catch (e: Exception) {
                                 isLoading = false
                                 Log.e("Login", "Exception: ${e.message}", e)

@@ -45,8 +45,8 @@ public class DashboardFragment extends Fragment {
     private Runnable autoRefreshRunnable;
 
     private static final String TAG = "DashboardFragment";
-    private static final String API_DASHBOARD = "http://ortuconnect.atwebpages.com/api/dashboard.php?id_siswa=";
-    private static final String API_PROFILE = "http://ortuconnect.atwebpages.com/api/profile.php?username=";
+    private static final String API_DASHBOARD = "https://ortuconnect.pbltifnganjuk.com/api/dashboard.php?id_siswa=";
+    private static final String API_PROFILE = "https://ortuconnect.pbltifnganjuk.com/api/profile.php?username=";
 
     @Nullable
     @Override

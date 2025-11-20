@@ -37,7 +37,7 @@ public class PerizinanFragment extends Fragment {
     private RequestQueue requestQueue;
     private Calendar calendar = Calendar.getInstance();
 
-    private static final String URL_IZIN = "http://ortuconnect.atwebpages.com/api/perizinan.php";
+    private static final String URL_IZIN = "https://ortuconnect.pbltifnganjuk.com/api/perizinan.php";
     private String selectedMonthFilter = "Semua Bulan";
 
     @Nullable

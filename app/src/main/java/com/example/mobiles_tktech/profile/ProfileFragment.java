@@ -36,7 +36,7 @@ public class ProfileFragment extends Fragment {
     private ImageView imgEditIcon, imgProfilePicture;
     private RequestQueue requestQueue;
 
-    private static final String BASE_URL = "http://ortuconnect.atwebpages.com/api/profile.php";
+    private static final String BASE_URL = "https://ortuconnect.pbltifnganjuk.com/api/profile.php";
     private String usernameOrtu = "";
 
     @Nullable
