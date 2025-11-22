@@ -32,7 +32,7 @@ public class NavigasiCard extends AppCompatActivity {
     private SessionManager sessionManager;
     private Handler sessionCheckHandler;
     private Runnable sessionCheckRunnable;
-    private static final long SESSION_CHECK_INTERVAL = 50000; // Cek setiap 5 detik
+    private static final long SESSION_CHECK_INTERVAL = 50000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,10 +40,8 @@ public class NavigasiCard extends AppCompatActivity {
 
         Log.d(TAG, "=== NavigasiCard onCreate ===");
 
-        // 🔹 VALIDASI SESSION DULU
         sessionManager = new SessionManager(getApplicationContext());
 
-        // Cek session segera
         if (!isSessionValid()) {
             Log.e(TAG, "Session invalid on onCreate, redirecting to login");
             redirectToLogin("Sesi tidak valid. Silakan login kembali.");
@@ -61,14 +59,12 @@ public class NavigasiCard extends AppCompatActivity {
 
         fragmentManager = getSupportFragmentManager();
 
-        // 🔹 Inisialisasi semua fragment
         dashboardFragment = new DashboardFragment();
         absensiFragment = new AbsensiFragment();
         kalenderFragment = new KalenderFragment();
         perizinanFragment = new PerizinanFragment();
         profileFragment = new ProfileFragment();
 
-        // 🔹 Tambahkan ke fragment manager, hanya dashboard yang ditampilkan
         fragmentManager.beginTransaction()
                 .add(R.id.fragment_container, profileFragment, "profile").hide(profileFragment)
                 .add(R.id.fragment_container, perizinanFragment, "perizinan").hide(perizinanFragment)
@@ -79,7 +75,6 @@ public class NavigasiCard extends AppCompatActivity {
 
         activeFragment = dashboardFragment;
 
-        // 🔹 Listener navigasi
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
@@ -109,7 +104,6 @@ public class NavigasiCard extends AppCompatActivity {
 
         bottomNav.setSelectedItemId(R.id.nav_beranda);
 
-        // 🔹 START PERIODIC SESSION CHECK
         startSessionCheck();
     }
 
@@ -118,14 +112,12 @@ public class NavigasiCard extends AppCompatActivity {
         super.onResume();
         Log.d(TAG, "=== NavigasiCard onResume ===");
 
-        // 🔹 CEK SESSION SETIAP KALI ACTIVITY MUNCUL LAGI
         if (!isSessionValid()) {
             Log.e(TAG, "Session invalid on onResume, redirecting to login");
             redirectToLogin("Sesi Anda telah berakhir. Silakan login kembali.");
             return;
         }
 
-        // Restart periodic check jika belum jalan
         if (sessionCheckHandler == null) {
             startSessionCheck();
         }
@@ -135,7 +127,6 @@ public class NavigasiCard extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "=== NavigasiCard onPause ===");
-        // Stop periodic check saat activity tidak terlihat
         stopSessionCheck();
     }
 
@@ -147,9 +138,7 @@ public class NavigasiCard extends AppCompatActivity {
     }
 
     private void startSessionCheck() {
-        if (sessionCheckHandler != null) {
-            return; // Sudah jalan
-        }
+        if (sessionCheckHandler != null) return;
 
         Log.d(TAG, "Starting periodic session check");
         sessionCheckHandler = new Handler(Looper.getMainLooper());
@@ -237,9 +226,6 @@ public class NavigasiCard extends AppCompatActivity {
         return sessionManager;
     }
 
-    /**
-     * 🔹 METHOD TAMBAHAN UNTUK NAVIGASI MANUAL DARI FRAGMENT
-     */
     public void navigateTo(String target) {
         BottomNavigationView bottomNav = findViewById(R.id.bottom_nav_card);
         if (bottomNav == null) return;
@@ -261,6 +247,18 @@ public class NavigasiCard extends AppCompatActivity {
             case "profile":
                 bottomNav.setSelectedItemId(R.id.nav_profile);
                 break;
+        }
+    }
+
+    // METHOD BARU — INI YANG BIKIN DASHBOARD LANGSUNG UPDATE SETELAH KIRIM IZIN
+    public void refreshDashboard() {
+        if (dashboardFragment != null && dashboardFragment.isAdded() && dashboardFragment.getView() != null) {
+            // Delay 2 detik biar server sempat update + tidak ANR
+            dashboardFragment.getView().postDelayed(() -> {
+                if (dashboardFragment instanceof DashboardFragment) {
+                    ((DashboardFragment) dashboardFragment).loadDashboard();
+                }
+            }, 2000); // 2 detik = cukup untuk dashboard.php update
         }
     }
 }

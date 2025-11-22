@@ -81,7 +81,7 @@ public class ProfileFragment extends Fragment {
                     .setTitle("Konfirmasi")
                     .setMessage("Apakah Anda yakin ingin keluar dari perangkat?")
                     .setPositiveButton("Ya", (dialog, which) -> logoutUser())
-                    .setNegativeButton("Tidak", (dialog, which) -> dialog.dismiss())
+                    .setNegativeButton("Tidak", null)
                     .show();
         });
 
@@ -123,6 +123,9 @@ public class ProfileFragment extends Fragment {
                             tvProfileClass.setText(kelas.toUpperCase());
 
                             updateProfileIcon(gender);
+
+                            // Simpan icon ke SharedPreferences agar Dashboard ikut berubah
+                            saveProfileIconToPrefs(gender);
                         }
                     } catch (JSONException e) {
                         Toast.makeText(getContext(), "Kesalahan parsing data", Toast.LENGTH_SHORT).show();
@@ -144,11 +147,22 @@ public class ProfileFragment extends Fragment {
         }
     }
 
+    // Method baru: simpan icon ke SharedPreferences
+    private void saveProfileIconToPrefs(String gender) {
+        SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("profile_image_type", "default");
+        boolean isPerempuan = gender.equalsIgnoreCase("perempuan");
+        editor.putString("profile_gender_icon", isPerempuan ? "cewe" : "cowo");
+        editor.apply();
+    }
+
     private void setLabel(View parent, int layoutId, String label) {
         ((TextView) parent.findViewById(layoutId).findViewById(R.id.tvDetailLabel)).setText(label);
     }
 
     private void showEditDataDialog() {
+        // ... (kode dialog tetap sama seperti sebelumnya)
         Context context = requireContext();
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_data, null);
@@ -162,13 +176,11 @@ public class ProfileFragment extends Fragment {
         final EditText edtTgl = createEdit("Tanggal Lahir (YYYY-MM-DD)", tvAnakTglLahir.getText().toString());
         final EditText edtAlamat = createEdit("Alamat", tvAnakAlamat.getText().toString());
 
-        //  Gender pakai Spinner
         final Spinner spGender = new Spinner(context);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(context,
                 android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"Laki-Laki", "Perempuan"});
         spGender.setAdapter(adapter);
-
         spGender.setSelection(tvGender.getText().toString().equalsIgnoreCase("perempuan") ? 1 : 0);
 
         llContainer.addView(edtNama);
@@ -207,16 +219,11 @@ public class ProfileFragment extends Fragment {
         EditText e = new EditText(requireContext());
         e.setHint(hint);
         e.setText(value);
-
         e.setPadding(32, 24, 32, 24);
         e.setBackgroundResource(android.R.drawable.edit_text);
-
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.bottomMargin = 20;
         e.setLayoutParams(params);
-
         return e;
     }
 
@@ -227,7 +234,12 @@ public class ProfileFragment extends Fragment {
                 response -> {
                     Toast.makeText(getContext(), "Berhasil update profil", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
+
+                    // Setelah berhasil update, langsung refresh data + simpan icon baru
                     loadProfileData();
+
+                    // Tambahan: simpan icon yang baru saja diubah
+                    saveProfileIconToPrefs(gender);
                 },
                 error -> Toast.makeText(getContext(), "Gagal update", Toast.LENGTH_SHORT).show()
         ) {
@@ -255,5 +267,6 @@ public class ProfileFragment extends Fragment {
         Intent i = new Intent(getActivity(), MainActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(i);
+        if (getActivity() != null) getActivity().finish();
     }
 }

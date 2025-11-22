@@ -17,6 +17,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.mobiles_tktech.R;
+import com.example.mobiles_tktech.navigasi.NavigasiCard;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import org.json.JSONArray;
@@ -30,7 +31,6 @@ public class PerizinanFragment extends Fragment {
 
     private EditText edtTanggalMulai, edtTanggalSelesai, edtKeterangan;
     private Spinner spinnerJenis;
-    // Tambahkan Spinner untuk filter bulan09
     private Spinner spinnerBulanFilter;
     private Button btnKirim;
     private LinearLayout containerStatus;
@@ -60,14 +60,12 @@ public class PerizinanFragment extends Fragment {
         containerStatus = view.findViewById(R.id.containerStatus);
         spinnerBulanFilter = view.findViewById(R.id.spinnerBulanFilter);
 
-        // 🔙 Tombol kembali ke Dashboard lewat NavigasiCard (bukan membuat fragment baru)
+        // Tombol kembali ke Dashboard
         ImageButton btnBack = view.findViewById(R.id.btn_back_header);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> {
-                if (getActivity() instanceof com.example.mobiles_tktech.navigasi.NavigasiCard) {
-                    ((com.example.mobiles_tktech.navigasi.NavigasiCard) getActivity()).navigateToDashboard();
-
-                    // update icon bottom nav ke Beranda
+                if (getActivity() instanceof NavigasiCard) {
+                    ((NavigasiCard) getActivity()).navigateToDashboard();
                     BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav_card);
                     bottomNav.setSelectedItemId(R.id.nav_beranda);
                 }
@@ -151,9 +149,15 @@ public class PerizinanFragment extends Fragment {
                             edtTanggalMulai.setText("");
                             edtTanggalSelesai.setText("");
                             edtKeterangan.setText("");
-                            loadRiwayatIzin();
+
+                            loadRiwayatIzin(); // refresh list di halaman perizinan
+
+                            // DASHBOARD LANGSUNG REFRESH OTOMATIS BIAR IZIN TERBARU KELIHATAN
+                            if (getActivity() instanceof NavigasiCard) {
+                                ((NavigasiCard) getActivity()).refreshDashboard();
+                            }
                         } else {
-                            Toast.makeText(getContext(), response.optString("message"), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), response.optString("message", "Gagal mengirim izin"), Toast.LENGTH_SHORT).show();
                         }
                     },
                     error -> {
@@ -248,7 +252,9 @@ public class PerizinanFragment extends Fragment {
             }
         }
 
-        if (containerStatus.getChildCount() == 0) tampilkanKosong("Tidak ada riwayat perizinan bulan " + filterBulan + ".");
+        if (containerStatus.getChildCount() == 0) {
+            tampilkanKosong("Tidak ada riwayat perizinan bulan " + filterBulan + ".");
+        }
     }
 
     private void tampilkanKosong(String pesan) {
@@ -256,6 +262,7 @@ public class PerizinanFragment extends Fragment {
         TextView tv = new TextView(getContext());
         tv.setText(pesan);
         tv.setPadding(0, 32, 0, 0);
+        tv.setGravity(Gravity.CENTER);
         containerStatus.addView(tv);
     }
 }
