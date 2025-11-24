@@ -31,10 +31,12 @@ import org.json.JSONObject;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 public class DashboardFragment extends Fragment {
 
+    private static final String TAG = "DashboardFragment";
     private TextView tvNamaSiswa, tvKelas, tvJadwal, tvKehadiran, tvIzin;
     private ImageView imgProfile;
 
@@ -49,6 +51,7 @@ public class DashboardFragment extends Fragment {
 
     private static final String API_DASHBOARD = "https://ortuconnect.pbltifnganjuk.com/api/dashboard.php?id_siswa=";
     private static final String API_PROFILE = "https://ortuconnect.pbltifnganjuk.com/api/profile.php?username=";
+    private static final String API_PERIZINAN = "https://ortuconnect.pbltifnganjuk.com/api/perizinan.php";
 
     @Nullable
     @Override
@@ -66,6 +69,8 @@ public class DashboardFragment extends Fragment {
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         username = prefs.getString("username", "");
         idSiswa = prefs.getString("id_siswa", "");
+
+        Log.d(TAG, "Username: " + username + ", ID Siswa: " + idSiswa);
 
         if (username.isEmpty()) {
             logoutUser();
@@ -91,17 +96,45 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    @Override public void onResume() { super.onResume(); isFragmentVisible = true; startAutoRefresh(); }
-    @Override public void onPause() { super.onPause(); isFragmentVisible = false; stopAutoRefresh(); }
-    @Override public void onDestroyView() { super.onDestroyView(); stopAutoRefresh(); if (autoRefreshHandler != null) autoRefreshHandler.removeCallbacksAndMessages(null); }
+    @Override
+    public void onResume() {
+        super.onResume();
+        isFragmentVisible = true;
+        Log.d(TAG, "Fragment RESUMED");
+        startAutoRefresh();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isFragmentVisible = false;
+        Log.d(TAG, "Fragment PAUSED");
+        stopAutoRefresh();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopAutoRefresh();
+        if (autoRefreshHandler != null) {
+            autoRefreshHandler.removeCallbacksAndMessages(null);
+        }
+    }
 
     private void startAutoRefresh() {
         if (autoRefreshHandler == null) autoRefreshHandler = new Handler();
         stopAutoRefresh();
-        autoRefreshRunnable = () -> {
-            if (isFragmentVisible && idSiswa != null && !idSiswa.isEmpty()) {
-                refreshDataSilent();
-                autoRefreshHandler.postDelayed(autoRefreshRunnable, AUTO_REFRESH_INTERVAL);
+
+        autoRefreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isFragmentVisible && idSiswa != null && !idSiswa.isEmpty()) {
+                    Log.d(TAG, "Auto refresh triggered");
+                    refreshDataSilent();
+                    if (isFragmentVisible && autoRefreshHandler != null) {
+                        autoRefreshHandler.postDelayed(this, AUTO_REFRESH_INTERVAL);
+                    }
+                }
             }
         };
         autoRefreshHandler.postDelayed(autoRefreshRunnable, AUTO_REFRESH_INTERVAL);
@@ -113,43 +146,59 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    private void refreshDataSilent() { loadDashboard(); }
+    private void refreshDataSilent() {
+        loadDashboard();
+    }
 
     private void loadProfileFirst() {
         String url = API_PROFILE + username;
+        Log.d(TAG, "Loading profile: " + url);
+
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
                         if (response.getBoolean("success")) {
                             JSONObject data = response.getJSONObject("data");
                             idSiswa = data.getString("id_siswa");
+
                             requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE)
                                     .edit().putString("id_siswa", idSiswa).apply();
+
+                            Log.d(TAG, "ID Siswa obtained: " + idSiswa);
                             loadDashboard();
                         } else {
                             Toast.makeText(getContext(), "Profil tidak ditemukan", Toast.LENGTH_SHORT).show();
                             logoutUser();
                         }
                     } catch (Exception e) {
+                        Log.e(TAG, "Profile parse error: " + e.getMessage());
                         Toast.makeText(getContext(), "Error memuat profil", Toast.LENGTH_SHORT).show();
                         logoutUser();
                     }
                 },
-                error -> { Toast.makeText(getContext(), "Gagal memuat profil", Toast.LENGTH_SHORT).show(); logoutUser(); });
+                error -> {
+                    Log.e(TAG, "Profile network error: " + error.toString());
+                    Toast.makeText(getContext(), "Gagal memuat profil", Toast.LENGTH_SHORT).show();
+                    logoutUser();
+                });
         requestQueue.add(request);
     }
 
     public void loadDashboard() {
         String url = API_DASHBOARD + idSiswa;
+        Log.d(TAG, "Loading dashboard: " + url);
+
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 res -> {
                     try {
+                        Log.d(TAG, "Dashboard response: " + res.toString(2));
+
                         if (!res.optString("status", "").equals("success")) {
                             Toast.makeText(getContext(), res.optString("message", "Data tidak ditemukan"), Toast.LENGTH_SHORT).show();
                             return;
                         }
 
-                        // Profil
+                        // === PROFIL & FOTO ===
                         if (res.has("profil")) {
                             JSONObject p = res.getJSONObject("profil");
                             tvNamaSiswa.setText(p.optString("nama_siswa", "Nama tidak tersedia"));
@@ -157,119 +206,251 @@ public class DashboardFragment extends Fragment {
                             loadProfileImageExactlyLikeProfilePage();
                         }
 
-                        // Agenda
-                        if (res.has("agenda") && res.getJSONArray("agenda").length() > 0) {
-                            JSONObject a = res.getJSONArray("agenda").getJSONObject(0);
-                            String kegiatan = a.optString("nama_kegiatan", "Kegiatan");
-                            String tanggal = a.optString("tanggal", "");
-                            tvJadwal.setText(!tanggal.isEmpty() ? kegiatan + " - " + formatTanggal(tanggal) : kegiatan);
-                        } else {
-                            tvJadwal.setText("Tidak ada agenda bulan ini");
-                        }
+                        // === AGENDA/PENGUMUMAN TERBARU ===
+                        displayLatestAgenda(res);
 
-                        // Kehadiran
+                        // === KEHADIRAN MINGGU INI ===
                         if (res.has("kehadiran_minggu_ini")) {
                             JSONObject k = res.getJSONObject("kehadiran_minggu_ini");
-                            tvKehadiran.setText("Hadir: " + k.optString("hadir", "0") + "/" + k.optString("total_hari", "5") + " hari");
+                            String hadir = k.optString("hadir", "0");
+                            String total = k.optString("total_hari", "5");
+                            tvKehadiran.setText("Hadir: " + hadir + "/" + total + " hari");
                         } else {
                             tvKehadiran.setText("Data kehadiran tidak tersedia");
                         }
 
-                        // IZIN TERBARU — FINAL FIX 100% WORK (tested on your API)
-                        if (res.has("izin_terbaru")) {
-                            try {
-                                Object raw = res.get("izin_terbaru");
-
-                                // Jika null / "null" / kosong
-                                if (raw == null || raw == JSONObject.NULL ||
-                                        (raw instanceof String && ("null".equals(raw) || "".equals(raw)))) {
-                                    tvIzin.setText("Tidak ada izin terbaru");
-                                } else {
-                                    JSONObject izin = null;
-
-                                    if (raw instanceof JSONObject) {
-                                        izin = (JSONObject) raw;
-                                    } else if (raw instanceof JSONArray && ((JSONArray) raw).length() > 0) {
-                                        izin = ((JSONArray) raw).getJSONObject(0);
-                                    }
-
-                                    if (izin != null) {
-                                        String status = izin.optString("status", "Pending");
-                                        String tgl = izin.optString("tanggal_pengajuan", "");
-                                        String alasan = izin.optString("alasan", "").trim();
-
-                                        // Bersihkan tanggal
-                                        if (tgl.contains(" ")) tgl = tgl.split(" ")[0];
-                                        if (tgl.contains("0000-00-00")) tgl = "";
-
-                                        StringBuilder sb = new StringBuilder(status);
-                                        if (!tgl.isEmpty()) {
-                                            sb.append(" - ").append(formatTanggal(tgl));
-                                        }
-                                        if (!alasan.isEmpty()) {
-                                            sb.append("\n").append(alasan);
-                                        }
-                                        tvIzin.setText(sb.toString());
-                                    } else {
-                                        tvIzin.setText("Tidak ada izin terbaru");
-                                    }
-                                }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                tvIzin.setText("Tidak ada izin terbaru");
-                            }
-                        } else {
-                            tvIzin.setText("Tidak ada izin terbaru");
-                        }
+                        // === IZIN TERBARU ===
+                        displayLatestIzin(res);
 
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.e(TAG, "Dashboard parse error: " + e.getMessage(), e);
                         Toast.makeText(getContext(), "Error parsing data", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> Toast.makeText(getContext(), "Gagal memuat dashboard", Toast.LENGTH_SHORT).show());
+                error -> {
+                    Log.e(TAG, "Dashboard network error: " + error.toString());
+                    Toast.makeText(getContext(), "Gagal memuat dashboard", Toast.LENGTH_SHORT).show();
+                });
         requestQueue.add(request);
     }
 
-    // Super aman parsing tanggal — support semua format umum
+    /**
+     * Menampilkan Agenda/Pengumuman TERBARU (berdasarkan tanggal paling baru)
+     */
+    private void displayLatestAgenda(JSONObject res) {
+        try {
+            if (!res.has("agenda")) {
+                tvJadwal.setText("Tidak ada agenda/pengumuman");
+                return;
+            }
+
+            JSONArray agendaArray = res.getJSONArray("agenda");
+
+            if (agendaArray.length() == 0) {
+                tvJadwal.setText("Tidak ada agenda/pengumuman");
+                return;
+            }
+
+            // Cari agenda dengan tanggal TERBARU
+            JSONObject latestAgenda = null;
+            long latestTime = 0;
+
+            for (int i = 0; i < agendaArray.length(); i++) {
+                JSONObject agenda = agendaArray.getJSONObject(i);
+                String tanggal = agenda.optString("tanggal", "");
+
+                if (!tanggal.isEmpty()) {
+                    long time = parseDateToMillis(tanggal);
+                    if (time > latestTime) {
+                        latestTime = time;
+                        latestAgenda = agenda;
+                    }
+                }
+            }
+
+            // Tampilkan agenda terbaru
+            if (latestAgenda != null) {
+                String kegiatan = latestAgenda.optString("nama_kegiatan", "Kegiatan");
+                String tanggal = latestAgenda.optString("tanggal", "");
+
+                if (!tanggal.isEmpty()) {
+                    String formattedDate = formatTanggal(tanggal);
+                    tvJadwal.setText(kegiatan + "\n" + formattedDate);
+                } else {
+                    tvJadwal.setText(kegiatan);
+                }
+
+                Log.d(TAG, "✅ Latest Agenda: " + kegiatan + " | " + tanggal);
+            } else {
+                tvJadwal.setText("Tidak ada agenda/pengumuman");
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error displaying agenda: " + e.getMessage(), e);
+            tvJadwal.setText("Error memuat agenda");
+        }
+    }
+
+    /**
+     * Menampilkan Izin TERBARU (berdasarkan tanggal pengajuan paling baru)
+     */
+    private void displayLatestIzin(JSONObject res) {
+        try {
+            if (!res.has("izin_terbaru")) {
+                tvIzin.setText("Tidak ada izin terbaru");
+                return;
+            }
+
+            Object rawIzin = res.get("izin_terbaru");
+
+            // Handle null/empty
+            if (rawIzin == null || rawIzin == JSONObject.NULL ||
+                    (rawIzin instanceof String && "null".equals(rawIzin))) {
+                tvIzin.setText("Tidak ada izin terbaru");
+                return;
+            }
+
+            JSONObject latestIzin = null;
+
+            // Handle JSONObject (single izin)
+            if (rawIzin instanceof JSONObject) {
+                latestIzin = (JSONObject) rawIzin;
+            }
+            // Handle JSONArray (multiple izin - pilih yang terbaru)
+            else if (rawIzin instanceof JSONArray) {
+                JSONArray izinArray = (JSONArray) rawIzin;
+
+                if (izinArray.length() == 0) {
+                    tvIzin.setText("Tidak ada izin terbaru");
+                    return;
+                }
+
+                // Cari izin dengan tanggal pengajuan TERBARU
+                long latestTime = 0;
+
+                for (int i = 0; i < izinArray.length(); i++) {
+                    JSONObject izin = izinArray.getJSONObject(i);
+                    String tanggalPengajuan = izin.optString("tanggal_pengajuan", "");
+
+                    if (!tanggalPengajuan.isEmpty()) {
+                        long time = parseDateToMillis(tanggalPengajuan);
+                        if (time > latestTime) {
+                            latestTime = time;
+                            latestIzin = izin;
+                        }
+                    }
+                }
+            }
+
+            // Tampilkan izin terbaru
+            if (latestIzin != null) {
+                String status = latestIzin.optString("status", "Pending");
+                String tanggalPengajuan = latestIzin.optString("tanggal_pengajuan", "");
+                String jenisIzin = latestIzin.optString("jenis_izin", "");
+                String alasan = latestIzin.optString("alasan", "");
+
+                StringBuilder display = new StringBuilder();
+                display.append(status);
+
+                // Tambahkan jenis izin
+                if (!jenisIzin.isEmpty()) {
+                    display.append(" (").append(jenisIzin).append(")");
+                }
+
+                // Tambahkan tanggal (hanya tanggal, bukan datetime)
+                if (!tanggalPengajuan.isEmpty()) {
+                    String tanggalOnly = tanggalPengajuan.split(" ")[0]; // Ambil YYYY-MM-DD saja
+                    if (!tanggalOnly.contains("0000")) {
+                        String formattedDate = formatTanggal(tanggalOnly);
+                        display.append("\n").append(formattedDate);
+                    }
+                }
+
+                // Tambahkan alasan (optional)
+                if (!alasan.isEmpty() && alasan.length() <= 50) {
+                    display.append("\n").append(alasan);
+                }
+
+                tvIzin.setText(display.toString());
+                Log.d(TAG, "✅ Latest Izin: " + status + " | " + tanggalPengajuan);
+            } else {
+                tvIzin.setText("Tidak ada izin terbaru");
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error displaying izin: " + e.getMessage(), e);
+            tvIzin.setText("Error memuat izin");
+        }
+    }
+
+    /**
+     * Parse tanggal ke milliseconds untuk perbandingan
+     * Support berbagai format tanggal
+     */
     private long parseDateToMillis(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return 0;
+        }
+
         String[] patterns = {
                 "yyyy-MM-dd HH:mm:ss",
                 "yyyy-MM-dd",
+                "dd-MM-yyyy HH:mm:ss",
                 "dd-MM-yyyy",
+                "dd/MM/yyyy HH:mm:ss",
                 "dd/MM/yyyy",
                 "yyyy/MM/dd HH:mm:ss",
                 "yyyy/MM/dd"
         };
+
         for (String pattern : patterns) {
             try {
                 SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.ROOT);
                 sdf.setLenient(false);
-                java.util.Date d = sdf.parse(dateStr);
-                if (d != null) return d.getTime();
-            } catch (ParseException ignored) {}
+                Date date = sdf.parse(dateStr.trim());
+                if (date != null) {
+                    Log.d(TAG, "Parsed date: " + dateStr + " -> " + date.getTime());
+                    return date.getTime();
+                }
+            } catch (ParseException ignored) {
+                // Try next pattern
+            }
         }
+
+        Log.w(TAG, "Failed to parse date: " + dateStr);
         return 0;
     }
 
+    /**
+     * Load profile image sesuai dengan halaman profil
+     */
     private void loadProfileImageExactlyLikeProfilePage() {
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         String imageType = prefs.getString("profile_image_type", "default");
         String genderIcon = prefs.getString("profile_gender_icon", "cowo");
 
         if ("custom".equals(imageType) && !prefs.getString("profile_image_url", "").isEmpty()) {
+            // Custom image handling (jika ada)
             imgProfile.setImageResource(R.drawable.icon_cowo);
             return;
         }
+
+        // Set berdasarkan gender
         imgProfile.setImageResource("cewe".equals(genderIcon) ? R.drawable.icon_cewe : R.drawable.icon_cowo);
+        Log.d(TAG, "Profile icon set: " + genderIcon);
     }
 
+    /**
+     * Format tanggal dari YYYY-MM-DD ke format Indonesia
+     */
     private String formatTanggal(String tanggal) {
         try {
-            SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
-            SimpleDateFormat out = new SimpleDateFormat("dd MMMM yyyy", new Locale("id", "ID"));
-            return out.format(in.parse(tanggal));
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMMM yyyy", new Locale("id", "ID"));
+            Date date = inputFormat.parse(tanggal);
+            return date != null ? outputFormat.format(date) : tanggal;
         } catch (Exception e) {
+            Log.e(TAG, "Error formatting date: " + e.getMessage());
             return tanggal;
         }
     }
@@ -283,9 +464,13 @@ public class DashboardFragment extends Fragment {
     private void logoutUser() {
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         prefs.edit().clear().apply();
-        Intent i = new Intent(getActivity(), MainActivity.class);
-        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(i);
-        if (getActivity() != null) getActivity().finish();
+
+        Intent intent = new Intent(getActivity(), MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+
+        if (getActivity() != null) {
+            getActivity().finish();
+        }
     }
 }

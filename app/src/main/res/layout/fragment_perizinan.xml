@@ -107,7 +107,8 @@
                         android:focusable="false"
                         android:clickable="true"
                         android:layout_marginBottom="12dp"
-                        tools:ignore="Autofill" />
+                        android:textSize="12sp"
+                    tools:ignore="Autofill" />
 
                     <!-- Tanggal Selesai -->
                     <TextView
@@ -131,6 +132,7 @@
                         android:focusable="false"
                         android:clickable="true"
                         android:layout_marginBottom="12dp"
+                        android:textSize="12sp"
                         tools:ignore="Autofill" />
 
                     <!-- Jenis Izin -->
@@ -158,6 +160,7 @@
                         android:fontFamily="@font/fontstandar"
                         android:layout_marginBottom="4dp"/>
 
+
                     <EditText
                         android:id="@+id/edtKeterangan"
                         android:layout_width="match_parent"
@@ -170,7 +173,9 @@
                         android:background="@drawable/rounded_input_bg"
                         android:layout_marginBottom="20dp"
                         tools:ignore="Autofill"
-                        android:inputType="textMultiLine"/>
+                        android:inputType="textMultiLine"
+                    android:textSize="12sp"/>
+
 
                     <!-- Tombol Kirim -->
                     <Button
