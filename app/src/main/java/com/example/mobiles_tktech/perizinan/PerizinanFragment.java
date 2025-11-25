@@ -29,6 +29,7 @@ import java.util.*;
 
 public class PerizinanFragment extends Fragment {
 
+    private static final String TAG = "PerizinanFragment";
     private EditText edtTanggalMulai, edtTanggalSelesai, edtKeterangan;
     private Spinner spinnerJenis;
     private Spinner spinnerBulanFilter;
@@ -60,7 +61,6 @@ public class PerizinanFragment extends Fragment {
         containerStatus = view.findViewById(R.id.containerStatus);
         spinnerBulanFilter = view.findViewById(R.id.spinnerBulanFilter);
 
-        // Tombol kembali ke Dashboard
         ImageButton btnBack = view.findViewById(R.id.btn_back_header);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> {
@@ -150,9 +150,8 @@ public class PerizinanFragment extends Fragment {
                             edtTanggalSelesai.setText("");
                             edtKeterangan.setText("");
 
-                            loadRiwayatIzin(); // refresh list di halaman perizinan
+                            loadRiwayatIzin();
 
-                            // DASHBOARD LANGSUNG REFRESH OTOMATIS BIAR IZIN TERBARU KELIHATAN
                             if (getActivity() instanceof NavigasiCard) {
                                 ((NavigasiCard) getActivity()).refreshDashboard();
                             }
@@ -162,6 +161,7 @@ public class PerizinanFragment extends Fragment {
                     },
                     error -> {
                         btnKirim.setEnabled(true);
+                        Log.e(TAG, "Gagal kirim izin: " + error.toString());
                         Toast.makeText(getContext(), "Gagal kirim izin ke server", Toast.LENGTH_SHORT).show();
                     }
             );
@@ -177,50 +177,94 @@ public class PerizinanFragment extends Fragment {
     private void loadRiwayatIzin() {
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         String username = prefs.getString("username", "");
-        if (username.isEmpty()) return;
+        if (username.isEmpty()) {
+            Log.w(TAG, "Username kosong, tidak bisa load riwayat izin");
+            tampilkanKosong("Username tidak ditemukan");
+            return;
+        }
 
         String url = URL_IZIN + "?username=" + username;
+        Log.d(TAG, "Loading riwayat izin dari: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
-                    if (!isAdded()) return;
+                    if (!isAdded()) {
+                        Log.w(TAG, "Fragment tidak di-attach, abaikan response");
+                        return;
+                    }
+
                     try {
+                        Log.d(TAG, "Response perizinan: " + response.toString(2));
+
                         if (response.getBoolean("success")) {
                             JSONArray data = response.getJSONArray("data");
-                            tampilkanStatus(data, selectedMonthFilter);
+                            Log.d(TAG, "Jumlah data izin: " + data.length());
+
+                            if (data.length() == 0) {
+                                tampilkanKosong("Tidak ada riwayat perizinan.");
+                            } else {
+                                tampilkanStatus(data, selectedMonthFilter);
+                            }
                         } else {
-                            tampilkanKosong("Tidak ada riwayat perizinan.");
+                            String message = response.optString("message", "Tidak ada riwayat perizinan");
+                            Log.w(TAG, "API gagal: " + message);
+                            tampilkanKosong(message);
                         }
                     } catch (JSONException e) {
-                        e.printStackTrace();
+                        Log.e(TAG, "Gagal parsing response: " + e.getMessage(), e);
+                        tampilkanKosong("Error parsing data");
                     }
                 },
                 error -> {
-                    if (isAdded()) tampilkanKosong("Gagal memuat riwayat izin.");
+                    if (isAdded()) {
+                        Log.e(TAG, "Network error: " + error.toString());
+                        tampilkanKosong("Gagal memuat riwayat izin");
+                    }
                 });
+
         requestQueue.add(request);
     }
 
     private void tampilkanStatus(JSONArray rawData, String filterBulan) throws JSONException {
-        if (!isAdded() || getContext() == null) return;
+        if (!isAdded() || getContext() == null) {
+            Log.w(TAG, "Fragment context tidak valid");
+            return;
+        }
 
         containerStatus.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(requireContext());
         SimpleDateFormat sdfBulan = new SimpleDateFormat("MMMM", new Locale("id", "ID"));
         SimpleDateFormat sdfParse = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
 
+        int itemCount = 0;
+
         for (int i = 0; i < rawData.length(); i++) {
             JSONObject izin = rawData.getJSONObject(i);
-            String tglMulai = izin.optString("tanggal_mulai", "");
+
+            // Debug: Log setiap item
+            Log.d(TAG, "Item " + i + ": " + izin.toString());
+
+            // Gunakan tanggal_mulai_raw dari API (format YYYY-MM-DD)
+            String tglMulai = izin.optString("tanggal_mulai_raw", "");
+
+            // Fallback ke tanggal_mulai jika raw tidak ada
+            if (tglMulai.isEmpty()) {
+                tglMulai = izin.optString("tanggal_mulai", "");
+            }
+
+            Log.d(TAG, "Tanggal mulai: " + tglMulai);
+
             boolean passFilter = true;
 
             if (!filterBulan.equals("Semua Bulan") && !tglMulai.isEmpty()) {
                 try {
+                    // Parse dari format YYYY-MM-DD
                     Date dateMulai = sdfParse.parse(tglMulai);
                     String bulanData = sdfBulan.format(dateMulai);
                     passFilter = bulanData.equalsIgnoreCase(filterBulan);
+                    Log.d(TAG, "Filter bulan: " + bulanData + " vs " + filterBulan + " = " + passFilter);
                 } catch (Exception e) {
-                    Log.e("Perizinan", "Gagal parsing tanggal: " + tglMulai, e);
+                    Log.e(TAG, "Gagal parsing tanggal: " + tglMulai, e);
                     passFilter = false;
                 }
             }
@@ -231,17 +275,32 @@ public class PerizinanFragment extends Fragment {
                 TextView tvJenis = card.findViewById(R.id.tvJenisIzin);
                 TextView tvStatus = card.findViewById(R.id.tvStatusIzin);
 
-                String tglSelesai = izin.optString("tanggal_selesai", "");
-                tvTanggal.setText(tglSelesai.isEmpty() ? tglMulai : tglMulai + " - " + tglSelesai);
-                tvJenis.setText(izin.optString("jenis_izin", "-"));
-                String status = izin.optString("status", "Menunggu");
+                // Gunakan tanggal_range dari API (sudah diformat)
+                String tanggalDisplay = izin.optString("tanggal_range", "");
+                if (tanggalDisplay.isEmpty()) {
+                    // Fallback: format manual
+                    String tglSelesai = izin.optString("tanggal_selesai_raw", "");
+                    if (tglSelesai.isEmpty()) {
+                        tglSelesai = izin.optString("tanggal_selesai", "");
+                    }
+                    tanggalDisplay = tglSelesai.isEmpty() ? tglMulai : tglMulai + " - " + tglSelesai;
+                }
 
+                tvTanggal.setText(tanggalDisplay);
+                tvJenis.setText(izin.optString("jenis_izin", "-"));
+
+                String status = izin.optString("status", "Menunggu");
                 tvStatus.setText(status);
+
+                // Set warna status
                 if (status.equalsIgnoreCase("Menunggu")) {
                     tvStatus.setBackgroundResource(R.drawable.bg_status_menunggu);
                     tvStatus.setTextColor(getResources().getColor(android.R.color.black));
                 } else if (status.equalsIgnoreCase("Disetujui")) {
                     tvStatus.setBackgroundResource(R.drawable.bg_status_disetujui);
+                    tvStatus.setTextColor(getResources().getColor(android.R.color.white));
+                } else if (status.equalsIgnoreCase("Ditolak")) {
+                    tvStatus.setBackgroundResource(android.R.color.darker_gray);
                     tvStatus.setTextColor(getResources().getColor(android.R.color.white));
                 } else {
                     tvStatus.setBackgroundResource(android.R.color.darker_gray);
@@ -249,8 +308,12 @@ public class PerizinanFragment extends Fragment {
                 }
 
                 containerStatus.addView(card);
+                itemCount++;
+                Log.d(TAG, "Card ditambahkan: " + tvJenis.getText());
             }
         }
+
+        Log.d(TAG, "Total item ditampilkan: " + itemCount);
 
         if (containerStatus.getChildCount() == 0) {
             tampilkanKosong("Tidak ada riwayat perizinan bulan " + filterBulan + ".");
@@ -258,11 +321,14 @@ public class PerizinanFragment extends Fragment {
     }
 
     private void tampilkanKosong(String pesan) {
+        if (!isAdded() || getContext() == null) return;
+
         containerStatus.removeAllViews();
         TextView tv = new TextView(getContext());
         tv.setText(pesan);
         tv.setPadding(0, 32, 0, 0);
         tv.setGravity(Gravity.CENTER);
         containerStatus.addView(tv);
+        Log.d(TAG, "Tampil kosong: " + pesan);
     }
 }
