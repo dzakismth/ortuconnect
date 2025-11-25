@@ -29,7 +29,6 @@ import java.util.*;
 
 public class PerizinanFragment extends Fragment {
 
-    private static final String TAG = "PerizinanFragment";
     private EditText edtTanggalMulai, edtTanggalSelesai, edtKeterangan;
     private Spinner spinnerJenis;
     private Spinner spinnerBulanFilter;
@@ -38,6 +37,7 @@ public class PerizinanFragment extends Fragment {
     private RequestQueue requestQueue;
     private Calendar calendar = Calendar.getInstance();
 
+    private static final String TAG = "PerizinanFragment";
     private static final String URL_IZIN = "https://ortuconnect.pbltifnganjuk.com/api/perizinan.php";
     private String selectedMonthFilter = "Semua Bulan";
 
@@ -149,7 +149,6 @@ public class PerizinanFragment extends Fragment {
                             edtTanggalMulai.setText("");
                             edtTanggalSelesai.setText("");
                             edtKeterangan.setText("");
-
                             loadRiwayatIzin();
 
                             if (getActivity() instanceof NavigasiCard) {
@@ -178,56 +177,48 @@ public class PerizinanFragment extends Fragment {
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         String username = prefs.getString("username", "");
         if (username.isEmpty()) {
-            Log.w(TAG, "Username kosong, tidak bisa load riwayat izin");
-            tampilkanKosong("Username tidak ditemukan");
+            Log.w(TAG, "Username kosong");
             return;
         }
 
         String url = URL_IZIN + "?username=" + username;
-        Log.d(TAG, "Loading riwayat izin dari: " + url);
+        Log.d(TAG, "Loading dari: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     if (!isAdded()) {
-                        Log.w(TAG, "Fragment tidak di-attach, abaikan response");
+                        Log.w(TAG, "Fragment tidak di-attach");
                         return;
                     }
-
                     try {
-                        Log.d(TAG, "Response perizinan: " + response.toString(2));
+                        Log.d(TAG, "Response: " + response.toString());
 
                         if (response.getBoolean("success")) {
                             JSONArray data = response.getJSONArray("data");
-                            Log.d(TAG, "Jumlah data izin: " + data.length());
-
-                            if (data.length() == 0) {
-                                tampilkanKosong("Tidak ada riwayat perizinan.");
-                            } else {
-                                tampilkanStatus(data, selectedMonthFilter);
-                            }
+                            Log.d(TAG, "Jumlah data: " + data.length());
+                            tampilkanStatus(data, selectedMonthFilter);
                         } else {
-                            String message = response.optString("message", "Tidak ada riwayat perizinan");
-                            Log.w(TAG, "API gagal: " + message);
-                            tampilkanKosong(message);
+                            String msg = response.optString("message", "Tidak ada riwayat perizinan");
+                            Log.w(TAG, "API gagal: " + msg);
+                            tampilkanKosong(msg);
                         }
                     } catch (JSONException e) {
-                        Log.e(TAG, "Gagal parsing response: " + e.getMessage(), e);
+                        Log.e(TAG, "Parse error: " + e.getMessage(), e);
                         tampilkanKosong("Error parsing data");
                     }
                 },
                 error -> {
+                    Log.e(TAG, "Network error: " + error.toString());
                     if (isAdded()) {
-                        Log.e(TAG, "Network error: " + error.toString());
-                        tampilkanKosong("Gagal memuat riwayat izin");
+                        tampilkanKosong("Gagal memuat riwayat izin.");
                     }
                 });
-
         requestQueue.add(request);
     }
 
     private void tampilkanStatus(JSONArray rawData, String filterBulan) throws JSONException {
         if (!isAdded() || getContext() == null) {
-            Log.w(TAG, "Fragment context tidak valid");
+            Log.w(TAG, "Context tidak valid");
             return;
         }
 
@@ -236,84 +227,126 @@ public class PerizinanFragment extends Fragment {
         SimpleDateFormat sdfBulan = new SimpleDateFormat("MMMM", new Locale("id", "ID"));
         SimpleDateFormat sdfParse = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
 
-        int itemCount = 0;
-
         for (int i = 0; i < rawData.length(); i++) {
-            JSONObject izin = rawData.getJSONObject(i);
+            try {
+                JSONObject izin = rawData.getJSONObject(i);
 
-            // Debug: Log setiap item
-            Log.d(TAG, "Item " + i + ": " + izin.toString());
-
-            // Gunakan tanggal_mulai_raw dari API (format YYYY-MM-DD)
-            String tglMulai = izin.optString("tanggal_mulai_raw", "");
-
-            // Fallback ke tanggal_mulai jika raw tidak ada
-            if (tglMulai.isEmpty()) {
-                tglMulai = izin.optString("tanggal_mulai", "");
-            }
-
-            Log.d(TAG, "Tanggal mulai: " + tglMulai);
-
-            boolean passFilter = true;
-
-            if (!filterBulan.equals("Semua Bulan") && !tglMulai.isEmpty()) {
-                try {
-                    // Parse dari format YYYY-MM-DD
-                    Date dateMulai = sdfParse.parse(tglMulai);
-                    String bulanData = sdfBulan.format(dateMulai);
-                    passFilter = bulanData.equalsIgnoreCase(filterBulan);
-                    Log.d(TAG, "Filter bulan: " + bulanData + " vs " + filterBulan + " = " + passFilter);
-                } catch (Exception e) {
-                    Log.e(TAG, "Gagal parsing tanggal: " + tglMulai, e);
-                    passFilter = false;
+                // Coba ambil dari raw, jika tidak ada ambil yang sudah format
+                String tglMulai = izin.optString("tanggal_mulai_raw", "");
+                if (tglMulai.isEmpty()) {
+                    tglMulai = izin.optString("tanggal_mulai", "");
                 }
-            }
 
-            if (passFilter) {
-                View card = inflater.inflate(R.layout.item_status_izin, containerStatus, false);
-                TextView tvTanggal = card.findViewById(R.id.tvTanggalIzin);
-                TextView tvJenis = card.findViewById(R.id.tvJenisIzin);
-                TextView tvStatus = card.findViewById(R.id.tvStatusIzin);
+                boolean passFilter = true;
 
-                // Gunakan tanggal_range dari API (sudah diformat)
-                String tanggalDisplay = izin.optString("tanggal_range", "");
-                if (tanggalDisplay.isEmpty()) {
-                    // Fallback: format manual
+                // Filter bulan
+                if (!filterBulan.equals("Semua Bulan") && !tglMulai.isEmpty()) {
+                    try {
+                        Date dateMulai = sdfParse.parse(tglMulai);
+                        String bulanData = sdfBulan.format(dateMulai);
+                        passFilter = bulanData.equalsIgnoreCase(filterBulan);
+                    } catch (Exception e) {
+                        Log.w(TAG, "Parse date gagal: " + tglMulai);
+                        passFilter = false;
+                    }
+                }
+
+                if (passFilter) {
+                    View card = inflater.inflate(R.layout.item_status_izin, containerStatus, false);
+
+                    TextView tvTanggal = card.findViewById(R.id.tvTanggalIzin);
+                    TextView tvJenis = card.findViewById(R.id.tvJenisIzin);
+                    TextView tvStatus = card.findViewById(R.id.tvStatusIzin);
+
+                    LinearLayout layoutDetail = card.findViewById(R.id.layoutDetailIzin);
+                    TextView tvKeterangan = card.findViewById(R.id.tvKeteranganPengajuan);
+                    LinearLayout layoutAlasanAdmin = card.findViewById(R.id.layoutAlasanAdmin);
+                    TextView tvLabelAlasan = card.findViewById(R.id.tvLabelAlasan);
+                    TextView tvAlasanAdmin = card.findViewById(R.id.tvAlasanAdmin);
+                    TextView tvHint = card.findViewById(R.id.tvHint);
+
+                    // Set data utama
                     String tglSelesai = izin.optString("tanggal_selesai_raw", "");
                     if (tglSelesai.isEmpty()) {
                         tglSelesai = izin.optString("tanggal_selesai", "");
                     }
-                    tanggalDisplay = tglSelesai.isEmpty() ? tglMulai : tglMulai + " - " + tglSelesai;
+
+                    String tanggalDisplay = tglSelesai.isEmpty() || tglSelesai.equals(tglMulai) ?
+                            tglMulai : tglMulai + " - " + tglSelesai;
+
+                    tvTanggal.setText(tanggalDisplay);
+                    tvJenis.setText(izin.optString("jenis_izin", "-"));
+
+                    String status = izin.optString("status", "Menunggu");
+                    tvStatus.setText(status);
+
+                    // Set warna status
+                    if (status.equalsIgnoreCase("Menunggu") || status.equalsIgnoreCase("Pending")) {
+                        tvStatus.setBackgroundResource(R.drawable.bg_status_menunggu);
+                        tvStatus.setTextColor(getResources().getColor(android.R.color.black));
+                    } else if (status.equalsIgnoreCase("Disetujui")) {
+                        tvStatus.setBackgroundResource(R.drawable.bg_status_disetujui);
+                        tvStatus.setTextColor(getResources().getColor(android.R.color.white));
+                    } else if (status.equalsIgnoreCase("Ditolak")) {
+                        tvStatus.setBackgroundResource(R.drawable.bg_status_menunggu);
+                        tvStatus.setTextColor(getResources().getColor(android.R.color.white));
+                        try {
+                            tvStatus.setBackgroundTintList(getResources().getColorStateList(android.R.color.holo_red_dark));
+                        } catch (Exception e) {
+                            Log.w(TAG, "Setbackgroundtint error: " + e.getMessage());
+                        }
+                    } else {
+                        tvStatus.setBackgroundResource(android.R.color.darker_gray);
+                        tvStatus.setTextColor(getResources().getColor(android.R.color.white));
+                    }
+
+                    // Set keterangan pengajuan
+                    String keterangan = izin.optString("keterangan", "Tidak ada keterangan");
+                    if (tvKeterangan != null) {
+                        tvKeterangan.setText(keterangan);
+                    }
+
+                    // Set alasan penolakan
+                    String alasanPenolakan = izin.optString("alasan_penolakan", "");
+
+                    if (layoutAlasanAdmin != null && tvAlasanAdmin != null && tvLabelAlasan != null) {
+                        if (!alasanPenolakan.isEmpty() && !status.equalsIgnoreCase("Menunggu") && !status.equalsIgnoreCase("Pending")) {
+                            layoutAlasanAdmin.setVisibility(View.VISIBLE);
+                            tvAlasanAdmin.setText(alasanPenolakan);
+
+                            if (status.equalsIgnoreCase("Disetujui")) {
+                                tvLabelAlasan.setText("Catatan: ✅");
+                                tvLabelAlasan.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+                            } else if (status.equalsIgnoreCase("Ditolak")) {
+                                tvLabelAlasan.setText("Alasan Ditolak: ❌");
+                                tvLabelAlasan.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+                            }
+                        } else {
+                            layoutAlasanAdmin.setVisibility(View.GONE);
+                        }
+                    }
+
+                    // Click listener - toggle visibility
+                    if (layoutDetail != null && tvHint != null) {
+                        final boolean[] isExpanded = {false};
+                        card.setOnClickListener(v -> {
+                            if (isExpanded[0]) {
+                                layoutDetail.setVisibility(View.GONE);
+                                tvHint.setText("Tap untuk detail");
+                            } else {
+                                layoutDetail.setVisibility(View.VISIBLE);
+                                tvHint.setText("Tap untuk tutup");
+                            }
+                            isExpanded[0] = !isExpanded[0];
+                        });
+                    }
+
+                    containerStatus.addView(card);
                 }
-
-                tvTanggal.setText(tanggalDisplay);
-                tvJenis.setText(izin.optString("jenis_izin", "-"));
-
-                String status = izin.optString("status", "Menunggu");
-                tvStatus.setText(status);
-
-                // Set warna status
-                if (status.equalsIgnoreCase("Menunggu")) {
-                    tvStatus.setBackgroundResource(R.drawable.bg_status_menunggu);
-                    tvStatus.setTextColor(getResources().getColor(android.R.color.black));
-                } else if (status.equalsIgnoreCase("Disetujui")) {
-                    tvStatus.setBackgroundResource(R.drawable.bg_status_disetujui);
-                    tvStatus.setTextColor(getResources().getColor(android.R.color.white));
-                } else if (status.equalsIgnoreCase("Ditolak")) {
-                    tvStatus.setBackgroundResource(android.R.color.darker_gray);
-                    tvStatus.setTextColor(getResources().getColor(android.R.color.white));
-                } else {
-                    tvStatus.setBackgroundResource(android.R.color.darker_gray);
-                    tvStatus.setTextColor(getResources().getColor(android.R.color.white));
-                }
-
-                containerStatus.addView(card);
-                itemCount++;
-                Log.d(TAG, "Card ditambahkan: " + tvJenis.getText());
+            } catch (Exception e) {
+                Log.e(TAG, "Error proses item " + i + ": " + e.getMessage(), e);
             }
         }
-
-        Log.d(TAG, "Total item ditampilkan: " + itemCount);
 
         if (containerStatus.getChildCount() == 0) {
             tampilkanKosong("Tidak ada riwayat perizinan bulan " + filterBulan + ".");
@@ -327,8 +360,12 @@ public class PerizinanFragment extends Fragment {
         TextView tv = new TextView(getContext());
         tv.setText(pesan);
         tv.setPadding(0, 32, 0, 0);
+        try {
+            tv.setTextColor(getResources().getColor(android.R.color.white));
+        } catch (Exception e) {
+            Log.w(TAG, "Set text color error");
+        }
         tv.setGravity(Gravity.CENTER);
         containerStatus.addView(tv);
-        Log.d(TAG, "Tampil kosong: " + pesan);
     }
 }

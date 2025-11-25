@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,10 +43,7 @@ public class DashboardFragment extends Fragment {
     private String idSiswa;
     private String username;
 
-    private static final long AUTO_REFRESH_INTERVAL = 5000;
-    private boolean isFragmentVisible = false;
-    private Handler autoRefreshHandler;
-    private Runnable autoRefreshRunnable;
+    private boolean hasLoadedOnce = false;
 
     private static final String API_DASHBOARD = "https://ortuconnect.pbltifnganjuk.com/api/dashboard.php?id_siswa=";
     private static final String API_PROFILE = "https://ortuconnect.pbltifnganjuk.com/api/profile.php?username=";
@@ -64,7 +60,6 @@ public class DashboardFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         requestQueue = Volley.newRequestQueue(requireContext());
-        autoRefreshHandler = new Handler();
 
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         username = prefs.getString("username", "");
@@ -99,55 +94,12 @@ public class DashboardFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        isFragmentVisible = true;
         Log.d(TAG, "Fragment RESUMED");
-        startAutoRefresh();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        isFragmentVisible = false;
-        Log.d(TAG, "Fragment PAUSED");
-        stopAutoRefresh();
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        stopAutoRefresh();
-        if (autoRefreshHandler != null) {
-            autoRefreshHandler.removeCallbacksAndMessages(null);
+        // Hanya load jika belum pernah di-load sebelumnya
+        if (!hasLoadedOnce && !idSiswa.isEmpty()) {
+            loadDashboard();
+            hasLoadedOnce = true;
         }
-    }
-
-    private void startAutoRefresh() {
-        if (autoRefreshHandler == null) autoRefreshHandler = new Handler();
-        stopAutoRefresh();
-
-        autoRefreshRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (isFragmentVisible && idSiswa != null && !idSiswa.isEmpty()) {
-                    Log.d(TAG, "Auto refresh triggered");
-                    refreshDataSilent();
-                    if (isFragmentVisible && autoRefreshHandler != null) {
-                        autoRefreshHandler.postDelayed(this, AUTO_REFRESH_INTERVAL);
-                    }
-                }
-            }
-        };
-        autoRefreshHandler.postDelayed(autoRefreshRunnable, AUTO_REFRESH_INTERVAL);
-    }
-
-    private void stopAutoRefresh() {
-        if (autoRefreshHandler != null && autoRefreshRunnable != null) {
-            autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
-        }
-    }
-
-    private void refreshDataSilent() {
-        loadDashboard();
     }
 
     private void loadProfileFirst() {
@@ -166,6 +118,7 @@ public class DashboardFragment extends Fragment {
 
                             Log.d(TAG, "ID Siswa obtained: " + idSiswa);
                             loadDashboard();
+                            hasLoadedOnce = true;
                         } else {
                             Toast.makeText(getContext(), "Profil tidak ditemukan", Toast.LENGTH_SHORT).show();
                             logoutUser();
@@ -191,8 +144,6 @@ public class DashboardFragment extends Fragment {
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 res -> {
                     try {
-                        Log.d(TAG, "Dashboard response: " + res.toString(2));
-
                         if (!res.optString("status", "").equals("success")) {
                             Toast.makeText(getContext(), res.optString("message", "Data tidak ditemukan"), Toast.LENGTH_SHORT).show();
                             return;
@@ -223,7 +174,7 @@ public class DashboardFragment extends Fragment {
                         displayLatestIzin(res);
 
                     } catch (Exception e) {
-                        Log.e(TAG, "Dashboard parse error: " + e.getMessage(), e);
+                        Log.e(TAG, "Dashboard parse error: " + e.getMessage());
                         Toast.makeText(getContext(), "Error parsing data", Toast.LENGTH_SHORT).show();
                     }
                 },
@@ -234,9 +185,6 @@ public class DashboardFragment extends Fragment {
         requestQueue.add(request);
     }
 
-    /**
-     * Menampilkan Agenda/Pengumuman TERBARU (berdasarkan tanggal paling baru)
-     */
     private void displayLatestAgenda(JSONObject res) {
         try {
             if (!res.has("agenda")) {
@@ -251,7 +199,6 @@ public class DashboardFragment extends Fragment {
                 return;
             }
 
-            // Cari agenda dengan tanggal TERBARU
             JSONObject latestAgenda = null;
             long latestTime = 0;
 
@@ -268,7 +215,6 @@ public class DashboardFragment extends Fragment {
                 }
             }
 
-            // Tampilkan agenda terbaru
             if (latestAgenda != null) {
                 String kegiatan = latestAgenda.optString("nama_kegiatan", "Kegiatan");
                 String tanggal = latestAgenda.optString("tanggal", "");
@@ -280,20 +226,17 @@ public class DashboardFragment extends Fragment {
                     tvJadwal.setText(kegiatan);
                 }
 
-                Log.d(TAG, "✅ Latest Agenda: " + kegiatan + " | " + tanggal);
+                Log.d(TAG, "Latest Agenda: " + kegiatan);
             } else {
                 tvJadwal.setText("Tidak ada agenda/pengumuman");
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Error displaying agenda: " + e.getMessage(), e);
+            Log.e(TAG, "Error displaying agenda: " + e.getMessage());
             tvJadwal.setText("Error memuat agenda");
         }
     }
 
-    /**
-     * Menampilkan Izin TERBARU (berdasarkan tanggal pengajuan paling baru)
-     */
     private void displayLatestIzin(JSONObject res) {
         try {
             if (!res.has("izin_terbaru")) {
@@ -303,7 +246,6 @@ public class DashboardFragment extends Fragment {
 
             Object rawIzin = res.get("izin_terbaru");
 
-            // Handle null/empty
             if (rawIzin == null || rawIzin == JSONObject.NULL ||
                     (rawIzin instanceof String && "null".equals(rawIzin))) {
                 tvIzin.setText("Tidak ada izin terbaru");
@@ -312,11 +254,9 @@ public class DashboardFragment extends Fragment {
 
             JSONObject latestIzin = null;
 
-            // Handle JSONObject (single izin)
             if (rawIzin instanceof JSONObject) {
                 latestIzin = (JSONObject) rawIzin;
             }
-            // Handle JSONArray (multiple izin - pilih yang terbaru)
             else if (rawIzin instanceof JSONArray) {
                 JSONArray izinArray = (JSONArray) rawIzin;
 
@@ -325,7 +265,6 @@ public class DashboardFragment extends Fragment {
                     return;
                 }
 
-                // Cari izin dengan tanggal pengajuan TERBARU
                 long latestTime = 0;
 
                 for (int i = 0; i < izinArray.length(); i++) {
@@ -342,7 +281,6 @@ public class DashboardFragment extends Fragment {
                 }
             }
 
-            // Tampilkan izin terbaru
             if (latestIzin != null) {
                 String status = latestIzin.optString("status", "Pending");
                 String tanggalPengajuan = latestIzin.optString("tanggal_pengajuan", "");
@@ -352,41 +290,34 @@ public class DashboardFragment extends Fragment {
                 StringBuilder display = new StringBuilder();
                 display.append(status);
 
-                // Tambahkan jenis izin
                 if (!jenisIzin.isEmpty()) {
                     display.append(" (").append(jenisIzin).append(")");
                 }
 
-                // Tambahkan tanggal (hanya tanggal, bukan datetime)
                 if (!tanggalPengajuan.isEmpty()) {
-                    String tanggalOnly = tanggalPengajuan.split(" ")[0]; // Ambil YYYY-MM-DD saja
+                    String tanggalOnly = tanggalPengajuan.split(" ")[0];
                     if (!tanggalOnly.contains("0000")) {
                         String formattedDate = formatTanggal(tanggalOnly);
                         display.append("\n").append(formattedDate);
                     }
                 }
 
-                // Tambahkan alasan (optional)
                 if (!alasan.isEmpty() && alasan.length() <= 50) {
                     display.append("\n").append(alasan);
                 }
 
                 tvIzin.setText(display.toString());
-                Log.d(TAG, "✅ Latest Izin: " + status + " | " + tanggalPengajuan);
+                Log.d(TAG, "Latest Izin: " + status);
             } else {
                 tvIzin.setText("Tidak ada izin terbaru");
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Error displaying izin: " + e.getMessage(), e);
+            Log.e(TAG, "Error displaying izin: " + e.getMessage());
             tvIzin.setText("Error memuat izin");
         }
     }
 
-    /**
-     * Parse tanggal ke milliseconds untuk perbandingan
-     * Support berbagai format tanggal
-     */
     private long parseDateToMillis(String dateStr) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
             return 0;
@@ -409,7 +340,6 @@ public class DashboardFragment extends Fragment {
                 sdf.setLenient(false);
                 Date date = sdf.parse(dateStr.trim());
                 if (date != null) {
-                    Log.d(TAG, "Parsed date: " + dateStr + " -> " + date.getTime());
                     return date.getTime();
                 }
             } catch (ParseException ignored) {
@@ -421,28 +351,20 @@ public class DashboardFragment extends Fragment {
         return 0;
     }
 
-    /**
-     * Load profile image sesuai dengan halaman profil
-     */
     private void loadProfileImageExactlyLikeProfilePage() {
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         String imageType = prefs.getString("profile_image_type", "default");
         String genderIcon = prefs.getString("profile_gender_icon", "cowo");
 
         if ("custom".equals(imageType) && !prefs.getString("profile_image_url", "").isEmpty()) {
-            // Custom image handling (jika ada)
             imgProfile.setImageResource(R.drawable.icon_cowo);
             return;
         }
 
-        // Set berdasarkan gender
         imgProfile.setImageResource("cewe".equals(genderIcon) ? R.drawable.icon_cewe : R.drawable.icon_cowo);
         Log.d(TAG, "Profile icon set: " + genderIcon);
     }
 
-    /**
-     * Format tanggal dari YYYY-MM-DD ke format Indonesia
-     */
     private String formatTanggal(String tanggal) {
         try {
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
