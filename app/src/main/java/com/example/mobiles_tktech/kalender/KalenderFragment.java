@@ -82,7 +82,7 @@ public class KalenderFragment extends Fragment {
         return view;
     }
 
-    // LOAD + LANGSUNG TAMPILKAN SEMUA AGENDA BULAN INI (INI YANG KAMU MAU!)
+    // LOAD + LANGSUNG TAMPILKAN SEMUA AGENDA BULAN INI (INI YANG KAMU MAU!)ya
     private void loadAndShowAllAgenda(int month, int year) {
         String url = "https://ortuconnect.pbltifnganjuk.com/api/admin/agenda.php?month=" + month + "&year=" + year;
         Log.d("Kalender", "Loading: " + url);
