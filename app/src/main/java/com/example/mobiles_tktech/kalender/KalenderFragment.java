@@ -12,7 +12,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
 import com.android.volley.Request;
@@ -28,245 +27,181 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public class KalenderFragment extends Fragment {
 
     private CalendarView calendarView;
     private LinearLayout containerAgenda;
-    private JSONArray agendaData;
-    private List<AgendaItem> agendaList;
+    private List<AgendaItem> agendaList = new ArrayList<>();
+
+    private int currentMonth = -1;  // 1-12
+    private int currentYear = -1;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_kalender, container, false);
 
-        // --- Back Button ---
+        // Back button
         ImageButton btnBack = view.findViewById(R.id.btn_back_header);
         btnBack.setOnClickListener(v -> {
             if (getActivity() instanceof com.example.mobiles_tktech.navigasi.NavigasiCard) {
                 ((com.example.mobiles_tktech.navigasi.NavigasiCard) getActivity()).navigateToDashboard();
-
-                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_nav_card);
-                bottomNav.setSelectedItemId(R.id.nav_beranda);
+                BottomNavigationView nav = requireActivity().findViewById(R.id.bottom_nav_card);
+                if (nav != null) nav.setSelectedItemId(R.id.nav_beranda);
             }
         });
 
-        // --- Referensi UI ---
         calendarView = view.findViewById(R.id.calendar_view);
         containerAgenda = view.findViewById(R.id.container_agenda_list);
 
-        // Ambil bulan & tahun saat ini
+        // Inisialisasi bulan & tahun saat ini
         Calendar cal = Calendar.getInstance();
-        int month = cal.get(Calendar.MONTH) + 1;
-        int year = cal.get(Calendar.YEAR);
+        currentMonth = cal.get(Calendar.MONTH) + 1;
+        currentYear = cal.get(Calendar.YEAR);
 
-        // Load agenda langsung
-        loadAgenda(month, year);
+        // Langsung load agenda bulan ini saat pertama buka
+        loadAndShowAllAgenda(currentMonth, currentYear);
 
-        // Jika user klik tanggal
-        calendarView.setOnDateChangeListener((viewCal, y, m, day) -> {
-            m = m + 1; // karena 0-11
-            String tanggalPilih = y + "-" + String.format("%02d", m) + "-" + String.format("%02d", day);
-            tampilkanAgendaBerdasarkanTanggal(tanggalPilih);
+        // DETEKSI GANTI BULAN → LANGSUNG TAMPILKAN SEMUA AGENDA BULAN BARU
+        calendarView.setOnDateChangeListener((view1, year, month, dayOfMonth) -> {
+            int selectedMonth = month + 1;
+            int selectedYear = year;
+
+            // Hanya trigger kalau bulan atau tahun berubah
+            if (selectedMonth != currentMonth || selectedYear != currentYear) {
+                currentMonth = selectedMonth;
+                currentYear = selectedYear;
+                loadAndShowAllAgenda(currentMonth, currentYear);  // LANGSUNG TAMPILKAN SEMUA AGENDA BULAN INI
+            }
+            // Kalau klik tanggal di bulan yang sama → tetap tampilkan semua (karena sudah di-load)
         });
 
         return view;
     }
 
-    // ==========================================================
-    //                 LOAD AGENDA (SEMUA AGENDA BULAN)
-    // ==========================================================
-    private void loadAgenda(int month, int year) {
-        String url = "https://ortuconnect.pbltifnganjuk.com/api/admin/agenda.php?month="
-                + month + "&year=" + year;
+    // LOAD + LANGSUNG TAMPILKAN SEMUA AGENDA BULAN INI (INI YANG KAMU MAU!)
+    private void loadAndShowAllAgenda(int month, int year) {
+        String url = "https://ortuconnect.pbltifnganjuk.com/api/admin/agenda.php?month=" + month + "&year=" + year;
+        Log.d("Kalender", "Loading: " + url);
 
-        Log.d("KalenderAgenda", "🌐 Request: " + url);
+        containerAgenda.removeAllViews();
+        tampilkanLoading("Memuat agenda " + getNamaBulan(month) + " " + year + "...");
 
         StringRequest request = new StringRequest(Request.Method.GET, url,
                 response -> {
-                    Log.d("KalenderAgenda", "✅ Response: " + response);
-
                     try {
                         JSONObject json = new JSONObject(response);
-
                         if (!json.getString("status").equals("success")) {
-                            tampilkanPesanKosong("Tidak ada agenda");
+                            tampilkanPesanKosong("Tidak ada agenda di bulan ini");
+                            agendaList.clear();
                             return;
                         }
 
-                        agendaData = json.getJSONArray("data");
-
-                        if (agendaData.length() == 0) {
-                            tampilkanPesanKosong("Tidak ada agenda bulan ini");
-                            return;
-                        }
-
-                        // Parse dan urutkan agenda
-                        parseAgendaData();
-
-                        // Tampilkan semua agenda
-                        tampilkanSemuaAgenda();
+                        JSONArray data = json.getJSONArray("data");
+                        parseAgendaData(data);
+                        tampilkanSemuaAgenda();  // LANGSUNG TAMPILKAN SEMUA AGENDA BULAN INI
 
                     } catch (Exception e) {
-                        Log.e("KalenderAgenda", "Parse Error: " + e.getMessage());
-                        tampilkanPesanKosong("Error parsing data");
+                        tampilkanPesanKosong("Error memuat data");
                     }
-
-                }, error -> {
-            Log.e("KalenderAgenda", "❌ ERROR: " + (error.getMessage() != null ? error.getMessage() : "Unknown error"));
-            tampilkanPesanKosong("Gagal memuat data");
-        });
+                },
+                error -> tampilkanPesanKosong("Gagal memuat agenda"));
 
         Volley.newRequestQueue(requireContext()).add(request);
     }
 
-    // ==========================================================
-    //              PARSE DAN URUTKAN DATA AGENDA
-    // ==========================================================
-    private void parseAgendaData() {
-        agendaList = new ArrayList<>();
-
+    private void parseAgendaData(JSONArray data) {
+        agendaList.clear();
         try {
-            for (int i = 0; i < agendaData.length(); i++) {
-                JSONObject agenda = agendaData.getJSONObject(i);
-
-                AgendaItem item = new AgendaItem(
-                        agenda.getString("nama_kegiatan"),
-                        agenda.getString("tanggal"),
-                        agenda.getString("deskripsi")
-                );
-
-                agendaList.add(item);
+            for (int i = 0; i < data.length(); i++) {
+                JSONObject obj = data.getJSONObject(i);
+                agendaList.add(new AgendaItem(
+                        obj.optString("nama_kegiatan", "Tanpa Judul"),
+                        obj.optString("tanggal", ""),
+                        obj.optString("deskripsi", "Tidak ada keterangan")
+                ));
             }
-
-            // ✅ Urutkan berdasarkan tanggal TERBARU (descending)
-            Collections.sort(agendaList, new Comparator<AgendaItem>() {
-                @Override
-                public int compare(AgendaItem a1, AgendaItem a2) {
-                    // Descending order (terbaru di atas)
-                    return a2.tanggal.compareTo(a1.tanggal);
-                }
-            });
-
+            // Urutkan terbaru di atas
+            agendaList.sort((a, b) -> b.tanggal.compareTo(a.tanggal));
         } catch (Exception e) {
-            Log.e("KalenderAgenda", "Parse Item Error: " + e.getMessage());
+            Log.e("Kalender", "Parse error: " + e.getMessage());
         }
     }
 
-    // ==========================================================
-    //           TAMPILKAN SEMUA AGENDA DALAM LIST
-    // ==========================================================
     private void tampilkanSemuaAgenda() {
         containerAgenda.removeAllViews();
-
-        if (agendaList == null || agendaList.isEmpty()) {
-            tampilkanPesanKosong("Tidak ada agenda");
+        if (agendaList.isEmpty()) {
+            tampilkanPesanKosong("Tidak ada agenda di bulan ini");
             return;
         }
 
         for (AgendaItem item : agendaList) {
-            View cardView = createAgendaCard(item);
-            containerAgenda.addView(cardView);
+            containerAgenda.addView(createAgendaCard(item));
         }
     }
 
-    // ==========================================================
-    //          TAMPILKAN AGENDA BERDASARKAN TANGGAL DIPILIH
-    // ==========================================================
-    private void tampilkanAgendaBerdasarkanTanggal(String tanggalDicari) {
-        containerAgenda.removeAllViews();
-
-        if (agendaList == null || agendaList.isEmpty()) {
-            tampilkanPesanKosong("Tidak ada agenda");
-            return;
-        }
-
-        boolean found = false;
-
-        for (AgendaItem item : agendaList) {
-            if (item.tanggal.equals(tanggalDicari)) {
-                View cardView = createAgendaCard(item);
-                containerAgenda.addView(cardView);
-                found = true;
-            }
-        }
-
-        if (!found) {
-            tampilkanPesanKosong("Tidak ada agenda pada tanggal ini");
-        }
-    }
-
-    // ==========================================================
-    //                  BUAT CARD AGENDA
-    // ==========================================================
     private View createAgendaCard(AgendaItem item) {
-        View cardView = LayoutInflater.from(getContext()).inflate(
-                R.layout.item_kegiatan,
-                containerAgenda,
-                false
-        );
+        View card = LayoutInflater.from(requireContext())
+                .inflate(R.layout.item_kegiatan, containerAgenda, false);
 
-        TextView tvTitle = cardView.findViewById(R.id.tv_kegiatan_title);
-        TextView tvDetail = cardView.findViewById(R.id.tv_kegiatan_detail);
-        TextView tvDeskripsi = cardView.findViewById(R.id.tv_kegiatan_deskripsi);
+        TextView tvTitle = card.findViewById(R.id.tv_kegiatan_title);
+        TextView tvDate = card.findViewById(R.id.tv_kegiatan_detail);
+        TextView tvDesc = card.findViewById(R.id.tv_kegiatan_deskripsi);
 
         tvTitle.setText(item.namaKegiatan);
-        tvDetail.setText(formatTanggal(item.tanggal));
-        tvDeskripsi.setText(item.deskripsi);
+        tvDate.setText(formatTanggal(item.tanggal));
+        tvDesc.setText(item.deskripsi);
 
-        return cardView;
+        return card;
     }
 
-    // ==========================================================
-    //                FORMAT TANGGAL KE INDONESIA
-    // ==========================================================
     private String formatTanggal(String tanggal) {
         try {
-            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd");
-            SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMMM yyyy");
-            return outputFormat.format(inputFormat.parse(tanggal));
+            SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+            SimpleDateFormat out = new SimpleDateFormat("dd MMMM yyyy", new Locale("id", "ID"));
+            return out.format(in.parse(tanggal));
         } catch (Exception e) {
             return tanggal;
         }
     }
 
-    // ==========================================================
-    //                  TAMPILKAN PESAN KOSONG
-    // ==========================================================
-    private void tampilkanPesanKosong(String pesan) {
-        // ✅ CEK CONTEXT DULU
-        if (getContext() == null) {
-            Log.w("KalenderFragment", "Context null, skip tampilkan pesan");
-            return;
-        }
-
-        containerAgenda.removeAllViews();
-
-        TextView tvKosong = new TextView(getContext());
-        tvKosong.setText(pesan);
-        tvKosong.setTextSize(16);
-        tvKosong.setTextColor(getResources().getColor(android.R.color.darker_gray));
-        tvKosong.setPadding(16, 32, 16, 16);
-        tvKosong.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-
-        containerAgenda.addView(tvKosong);
+    private String getNamaBulan(int month) {
+        String[] bulan = {"", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                "Juli", "Agustus", "September", "Oktober", "November", "Desember"};
+        return bulan[month];
     }
 
-    // ==========================================================
-    //                    MODEL AGENDA ITEM
-    // ==========================================================
-    private static class AgendaItem {
-        String namaKegiatan;
-        String tanggal;
-        String deskripsi;
+    private void tampilkanLoading(String msg) {
+        containerAgenda.removeAllViews();
+        TextView tv = new TextView(requireContext());
+        tv.setText(msg);
+        tv.setTextColor(getResources().getColor(android.R.color.white));
+        tv.setTextSize(15);
+        tv.setPadding(32, 80, 32, 32);
+        tv.setGravity(android.view.Gravity.CENTER);
+        containerAgenda.addView(tv);
+    }
 
-        AgendaItem(String namaKegiatan, String tanggal, String deskripsi) {
-            this.namaKegiatan = namaKegiatan;
-            this.tanggal = tanggal;
-            this.deskripsi = deskripsi;
+    private void tampilkanPesanKosong(String msg) {
+        containerAgenda.removeAllViews();
+        TextView tv = new TextView(requireContext());
+        tv.setText(msg);
+        tv.setTextColor(getResources().getColor(android.R.color.darker_gray));
+        tv.setTextSize(16);
+        tv.setPadding(32, 80, 32, 32);
+        tv.setGravity(android.view.Gravity.CENTER);
+        containerAgenda.addView(tv);
+    }
+
+    private static class AgendaItem {
+        String namaKegiatan, tanggal, deskripsi;
+        AgendaItem(String nama, String tgl, String desc) {
+            this.namaKegiatan = nama;
+            this.tanggal = tgl;
+            this.deskripsi = desc;
         }
     }
 }

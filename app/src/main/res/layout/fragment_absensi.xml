@@ -16,6 +16,7 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp">
 
+        <!-- Tombol Back -->
         <ImageButton
             android:id="@+id/btn_back_header"
             android:layout_width="48dp"
@@ -27,19 +28,22 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
+        <!-- JUDUL SEKARANG BENAR-BENAR DI TENGAH LAYAR -->
         <TextView
             android:id="@+id/tv_title_absensi_header"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Riwayat Absensi"
             android:fontFamily="@font/fontutama"
             android:textColor="@android:color/white"
             android:textSize="22sp"
             android:textStyle="bold"
-            app:layout_constraintStart_toEndOf="@id/btn_back_header"
+            android:gravity="center"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Card utama – hanya pojok atas rounded 28dp -->
@@ -112,7 +116,7 @@
                     tools:listitem="@layout/item_kegiatan"
                     tools:itemCount="6" />
 
-                <!-- EMPTY STATE CANTIK TAPI PAKAI TEXTVIEW BIASA + IKON ANDROID DEFAULT -->
+                <!-- EMPTY STATE -->
                 <TextView
                     android:id="@+id/tv_empty_state"
                     android:layout_width="wrap_content"

@@ -89,7 +89,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Kelas"
-                            android:fontFamily="@font/fontutama"
+                            android:fontFamily="@font/fontstandar"
                             android:textColor="@color/biru"
                             android:textSize="14sp" />
                     </LinearLayout>
@@ -128,7 +128,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="N/A"
-                        android:fontFamily="@font/fontutama"
+                        android:fontFamily="@font/fontstandar"
                         android:textColor="@color/biru"
                         android:textSize="15sp"
                         android:layout_marginStart="12dp"/>
@@ -168,7 +168,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="4 dari 6 hari hadir"
-                        android:fontFamily="@font/fontutama"
+                        android:fontFamily="@font/fontstandar"
                         android:textColor="@color/biru"
                         android:textSize="14sp"
                         android:layout_marginTop="0dp" />
@@ -209,7 +209,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="0dp"
                         android:text="Izin Disetujui: 07/10/2025"
-                        android:fontFamily="@font/fontutama"
+                        android:fontFamily="@font/fontstandar"
                         android:textColor="@color/biru"
                         android:textSize="14sp" />
                 </LinearLayout>

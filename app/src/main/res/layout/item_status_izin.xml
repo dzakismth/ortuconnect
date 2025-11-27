@@ -11,59 +11,152 @@
     android:focusable="true"
     android:foreground="?android:attr/selectableItemBackground">
 
-<LinearLayout
-android:layout_width="match_parent"
-android:layout_height="wrap_content"
-android:orientation="horizontal"
-android:gravity="center_vertical"
-android:padding="16dp">
-
-<LinearLayout
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_weight="1"
-    android:orientation="vertical">
-
-    <!-- Tanggal -->
-    <TextView
-        android:id="@+id/tvTanggalIzin"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="2025-12-02 - 2025-12-03"
-        android:textColor="@color/biru"
-        android:fontFamily="@font/fontutama"
-        android:textStyle="bold"
-        android:textSize="15sp" />
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <!-- Jenis Izin -->
-    <TextView
-        android:id="@+id/tvJenisIzin"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Izin"
-        android:textColor="@color/blue_dark"
-        android:fontFamily="@font/fontstandar"
-        android:textSize="13sp"
-        android:layout_marginTop="4dp" />
+        <!-- Header (Selalu Terlihat) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-</LinearLayout>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-<!-- Status Hijau (Disetujui) — ROUNDED SAMA DENGAN CARD PUTIH -->
-<TextView
-    android:id="@+id/tvStatusIzin"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:text="Disetujui"
-    android:textColor="@android:color/white"
-    android:fontFamily="@font/fontutama"
-    android:textStyle="bold"
-    android:textSize="12sp"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="8dp"
-    android:background="@drawable/bg_status_disetujui"
-    android:layout_marginStart="12dp"
-    android:minWidth="90dp"
-    android:gravity="center" />
+                <!-- Tanggal -->
+                <TextView
+                    android:id="@+id/tvTanggalIzin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2025-12-02 - 2025-12-03"
+                    android:textColor="@color/biru"
+                    android:fontFamily="@font/fontutama"
+                    android:textStyle="bold"
+                    android:textSize="15sp" />
 
-</LinearLayout>
-    </androidx.cardview.widget.CardView>
+                <!-- Jenis Izin -->
+                <TextView
+                    android:id="@+id/tvJenisIzin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Izin"
+                    android:textColor="@color/blue_dark"
+                    android:fontFamily="@font/fontstandar"
+                    android:textSize="13sp"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+
+            <!-- Status Badge -->
+            <TextView
+                android:id="@+id/tvStatusIzin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Disetujui"
+                android:textColor="@android:color/white"
+                android:fontFamily="@font/fontutama"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                android:background="@drawable/bg_status_disetujui"
+                android:layout_marginStart="12dp"
+                android:minWidth="90dp"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- Detail (Hidden by default) -->
+        <LinearLayout
+            android:id="@+id/layoutDetailIzin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="12dp"
+            android:visibility="gone">
+
+            <!-- Garis Pemisah -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginBottom="12dp"/>
+
+            <!-- Keterangan Pengajuan -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Keterangan:"
+                android:fontFamily="@font/fontutama"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/tvKeteranganPengajuan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Demam tinggi"
+                android:fontFamily="@font/fontstandar"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="12dp"
+                android:padding="8dp"
+                android:background="@drawable/rounded_input_bg"/>
+
+            <!-- Alasan Admin (Hanya muncul jika ada) -->
+            <LinearLayout
+                android:id="@+id/layoutAlasanAdmin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvLabelAlasan"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Catatan Admin:"
+                    android:fontFamily="@font/fontutama"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#4CAF50"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvAlasanAdmin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Surat dokter lengkap"
+                    android:fontFamily="@font/fontstandar"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:padding="8dp"
+                    android:background="@drawable/rounded_input_bg"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Hint Text (Tap untuk detail) -->
+        <TextView
+            android:id="@+id/tvHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tap untuk detail"
+            android:fontFamily="@font/fontstandar"
+            android:textSize="11sp"
+            android:textColor="#999999"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"/>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
