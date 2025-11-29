@@ -36,7 +36,7 @@ import java.util.Locale;
 public class DashboardFragment extends Fragment {
 
     private static final String TAG = "DashboardFragment";
-    private TextView tvNamaSiswa, tvKelas, tvJadwal, tvKehadiran, tvIzin;
+    private TextView tvNamaSiswa, tvKelas, tvAgendaTitle, tvAgendaDate, tvKehadiran, tvIzin;
     private ImageView imgProfile;
 
     private RequestQueue requestQueue;
@@ -47,7 +47,6 @@ public class DashboardFragment extends Fragment {
 
     private static final String API_DASHBOARD = "https://ortuconnect.pbltifnganjuk.com/api/dashboard.php?id_siswa=";
     private static final String API_PROFILE = "https://ortuconnect.pbltifnganjuk.com/api/profile.php?username=";
-    private static final String API_PERIZINAN = "https://ortuconnect.pbltifnganjuk.com/api/perizinan.php";
 
     @Nullable
     @Override
@@ -74,7 +73,8 @@ public class DashboardFragment extends Fragment {
 
         tvNamaSiswa = view.findViewById(R.id.tv_nama_siswa);
         tvKelas = view.findViewById(R.id.tv_kelas);
-        tvJadwal = view.findViewById(R.id.tv_agenda);
+        tvAgendaTitle = view.findViewById(R.id.tv_agenda_title);
+        tvAgendaDate = view.findViewById(R.id.tv_agenda_date);
         tvKehadiran = view.findViewById(R.id.tv_kehadiran_status);
         tvIzin = view.findViewById(R.id.tv_izin_status);
         imgProfile = view.findViewById(R.id.imgProfile);
@@ -95,7 +95,10 @@ public class DashboardFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Log.d(TAG, "Fragment RESUMED");
-        // Hanya load jika belum pernah di-load sebelumnya
+
+        // SELALU UPDATE FOTO PROFIL SETIAP KEMBALI KE DASHBOARD
+        loadProfileImageExactlyLikeProfilePage();
+
         if (!hasLoadedOnce && !idSiswa.isEmpty()) {
             loadDashboard();
             hasLoadedOnce = true;
@@ -154,7 +157,7 @@ public class DashboardFragment extends Fragment {
                             JSONObject p = res.getJSONObject("profil");
                             tvNamaSiswa.setText(p.optString("nama_siswa", "Nama tidak tersedia"));
                             tvKelas.setText(p.optString("kelas", "Kelas tidak tersedia"));
-                            loadProfileImageExactlyLikeProfilePage();
+                            loadProfileImageExactlyLikeProfilePage(); // update foto
                         }
 
                         // === AGENDA/PENGUMUMAN TERBARU ===
@@ -188,14 +191,16 @@ public class DashboardFragment extends Fragment {
     private void displayLatestAgenda(JSONObject res) {
         try {
             if (!res.has("agenda")) {
-                tvJadwal.setText("Tidak ada agenda/pengumuman");
+                tvAgendaTitle.setText("Tidak ada agenda/pengumuman");
+                tvAgendaDate.setText("");
                 return;
             }
 
             JSONArray agendaArray = res.getJSONArray("agenda");
 
             if (agendaArray.length() == 0) {
-                tvJadwal.setText("Tidak ada agenda/pengumuman");
+                tvAgendaTitle.setText("Tidak ada agenda/pengumuman");
+                tvAgendaDate.setText("");
                 return;
             }
 
@@ -219,21 +224,25 @@ public class DashboardFragment extends Fragment {
                 String kegiatan = latestAgenda.optString("nama_kegiatan", "Kegiatan");
                 String tanggal = latestAgenda.optString("tanggal", "");
 
+                tvAgendaTitle.setText(kegiatan);
+
                 if (!tanggal.isEmpty()) {
                     String formattedDate = formatTanggal(tanggal);
-                    tvJadwal.setText(kegiatan + "\n" + formattedDate);
+                    tvAgendaDate.setText(formattedDate);
                 } else {
-                    tvJadwal.setText(kegiatan);
+                    tvAgendaDate.setText("");
                 }
 
                 Log.d(TAG, "Latest Agenda: " + kegiatan);
             } else {
-                tvJadwal.setText("Tidak ada agenda/pengumuman");
+                tvAgendaTitle.setText("Tidak ada agenda/pengumuman");
+                tvAgendaDate.setText("");
             }
 
         } catch (Exception e) {
             Log.e(TAG, "Error displaying agenda: " + e.getMessage());
-            tvJadwal.setText("Error memuat agenda");
+            tvAgendaTitle.setText("Error memuat agenda");
+            tvAgendaDate.setText("");
         }
     }
 
@@ -318,6 +327,30 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    // DIPERBAIKI: Selalu update foto profil dari SharedPreferences terbaru
+    private void loadProfileImageExactlyLikeProfilePage() {
+        if (getContext() == null || imgProfile == null) return;
+
+        SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        String imageType = prefs.getString("profile_image_type", "default");
+        String genderIcon = prefs.getString("profile_gender_icon", "cowo");
+
+        if ("custom".equals(imageType)) {
+            String imageUrl = prefs.getString("profile_image_url", "");
+            if (!imageUrl.isEmpty()) {
+                // Nanti bisa diganti dengan Glide/Picasso
+                imgProfile.setImageResource(R.drawable.icon_cowo);
+            } else {
+                imgProfile.setImageResource("cewe".equals(genderIcon) ? R.drawable.icon_cewe : R.drawable.icon_cowo);
+            }
+        } else {
+            // Default: pakai icon gender
+            imgProfile.setImageResource("cewe".equals(genderIcon) ? R.drawable.icon_cewe : R.drawable.icon_cowo);
+        }
+
+        Log.d(TAG, "Foto profil diperbarui → gender: " + genderIcon);
+    }
+
     private long parseDateToMillis(String dateStr) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
             return 0;
@@ -343,26 +376,11 @@ public class DashboardFragment extends Fragment {
                     return date.getTime();
                 }
             } catch (ParseException ignored) {
-                // Try next pattern
             }
         }
 
         Log.w(TAG, "Failed to parse date: " + dateStr);
         return 0;
-    }
-
-    private void loadProfileImageExactlyLikeProfilePage() {
-        SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        String imageType = prefs.getString("profile_image_type", "default");
-        String genderIcon = prefs.getString("profile_gender_icon", "cowo");
-
-        if ("custom".equals(imageType) && !prefs.getString("profile_image_url", "").isEmpty()) {
-            imgProfile.setImageResource(R.drawable.icon_cowo);
-            return;
-        }
-
-        imgProfile.setImageResource("cewe".equals(genderIcon) ? R.drawable.icon_cewe : R.drawable.icon_cowo);
-        Log.d(TAG, "Profile icon set: " + genderIcon);
     }
 
     private String formatTanggal(String tanggal) {

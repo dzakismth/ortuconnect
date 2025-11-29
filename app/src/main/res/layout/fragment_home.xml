@@ -58,7 +58,6 @@
                     android:padding="16dp"
                     android:gravity="center_vertical">
 
-                    <!-- Foto Profil -->
                     <ImageView
                         android:id="@+id/imgProfile"
                         android:layout_width="60dp"
@@ -67,7 +66,6 @@
                         android:background="@drawable/rounded_image_white_border"
                         android:contentDescription="Foto Profil" />
 
-                    <!-- Nama & Kelas -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -96,7 +94,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- CARD JADWAL -->
+            <!-- CARD JADWAL / AGENDA -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_jadwal"
                 android:layout_width="match_parent"
@@ -123,15 +121,33 @@
                         android:contentDescription="Speaker Icon"
                         app:tint="@color/ungu" />
 
-                    <TextView
-                        android:id="@+id/tv_agenda"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="N/A"
-                        android:fontFamily="@font/fontstandar"
-                        android:textColor="@color/biru"
-                        android:textSize="15sp"
-                        android:layout_marginStart="12dp"/>
+                        android:orientation="vertical"
+                        android:layout_marginStart="12dp">
+
+                        <!-- Judul Agenda (upacara novemberan 2) — SAMA DENGAN “Kehadiran Minggu Ini” -->
+                        <TextView
+                            android:id="@+id/tv_agenda_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="upacara novemberan 2"
+                            android:fontFamily="@font/fontutama"
+                            android:textColor="@color/ungu"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <!-- Tanggal — TETAP FONT KECIL seperti semula -->
+                        <TextView
+                            android:id="@+id/tv_agenda_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="27 November 2025"
+                            android:fontFamily="@font/fontstandar"
+                            android:textColor="@color/biru"
+                            android:textSize="14sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -167,7 +183,7 @@
                         android:id="@+id/tv_kehadiran_status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="4 dari 6 hari hadir"
+                        android:text="Hadir: 4/5 hari"
                         android:fontFamily="@font/fontstandar"
                         android:textColor="@color/biru"
                         android:textSize="14sp"
@@ -208,7 +224,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="0dp"
-                        android:text="Izin Disetujui: 07/10/2025"
+                        android:text="Ditolak (Izin)\n28 November 2025"
                         android:fontFamily="@font/fontstandar"
                         android:textColor="@color/biru"
                         android:textSize="14sp" />

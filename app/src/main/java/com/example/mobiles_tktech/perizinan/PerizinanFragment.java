@@ -287,7 +287,7 @@ public class PerizinanFragment extends Fragment {
             if (status.equalsIgnoreCase("Ditolak") && !alasanPenolakan.isEmpty()) {
                 // Hanya ditolak yang tampilkan alasan + ikon cross
                 layoutAlasanAdmin.setVisibility(View.VISIBLE);
-                tvLabelAlasan.setText("Alasan Ditolak: Cross");
+                tvLabelAlasan.setText("Alasan Ditolak");
                 tvLabelAlasan.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
                 tvAlasanAdmin.setText(alasanPenolakan);
             } else {
