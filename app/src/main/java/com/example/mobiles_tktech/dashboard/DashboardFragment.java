@@ -95,8 +95,6 @@ public class DashboardFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Log.d(TAG, "Fragment RESUMED");
-
-        // SELALU UPDATE FOTO PROFIL SETIAP KEMBALI KE DASHBOARD
         loadProfileImageExactlyLikeProfilePage();
 
         if (!hasLoadedOnce && !idSiswa.isEmpty()) {
@@ -152,18 +150,15 @@ public class DashboardFragment extends Fragment {
                             return;
                         }
 
-                        // === PROFIL & FOTO ===
                         if (res.has("profil")) {
                             JSONObject p = res.getJSONObject("profil");
                             tvNamaSiswa.setText(p.optString("nama_siswa", "Nama tidak tersedia"));
                             tvKelas.setText(p.optString("kelas", "Kelas tidak tersedia"));
-                            loadProfileImageExactlyLikeProfilePage(); // update foto
+                            loadProfileImageExactlyLikeProfilePage();
                         }
 
-                        // === AGENDA/PENGUMUMAN TERBARU ===
                         displayLatestAgenda(res);
 
-                        // === KEHADIRAN MINGGU INI ===
                         if (res.has("kehadiran_minggu_ini")) {
                             JSONObject k = res.getJSONObject("kehadiran_minggu_ini");
                             String hadir = k.optString("hadir", "0");
@@ -173,7 +168,6 @@ public class DashboardFragment extends Fragment {
                             tvKehadiran.setText("Data kehadiran tidak tersedia");
                         }
 
-                        // === IZIN TERBARU ===
                         displayLatestIzin(res);
 
                     } catch (Exception e) {
@@ -232,8 +226,6 @@ public class DashboardFragment extends Fragment {
                 } else {
                     tvAgendaDate.setText("");
                 }
-
-                Log.d(TAG, "Latest Agenda: " + kegiatan);
             } else {
                 tvAgendaTitle.setText("Tidak ada agenda/pengumuman");
                 tvAgendaDate.setText("");
@@ -246,18 +238,24 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    // DIPERBAIKI: TIDAK PERNAH TAMPILKAN "null" LAGI
     private void displayLatestIzin(JSONObject res) {
         try {
+            // Jika tidak ada key "izin_terbaru" sama sekali
             if (!res.has("izin_terbaru")) {
-                tvIzin.setText("Tidak ada izin terbaru");
+                tvIzin.setText("Belum ada izin terbaru");
                 return;
             }
 
             Object rawIzin = res.get("izin_terbaru");
 
-            if (rawIzin == null || rawIzin == JSONObject.NULL ||
-                    (rawIzin instanceof String && "null".equals(rawIzin))) {
-                tvIzin.setText("Tidak ada izin terbaru");
+            // Cek apakah benar-benar null / kosong / string "null"
+            boolean isEmpty = rawIzin == null
+                    || rawIzin == JSONObject.NULL
+                    || (rawIzin instanceof String && ("null".equalsIgnoreCase(rawIzin.toString()) || rawIzin.toString().trim().isEmpty()));
+
+            if (isEmpty) {
+                tvIzin.setText("Belum ada izin terbaru");
                 return;
             }
 
@@ -265,21 +263,17 @@ public class DashboardFragment extends Fragment {
 
             if (rawIzin instanceof JSONObject) {
                 latestIzin = (JSONObject) rawIzin;
-            }
-            else if (rawIzin instanceof JSONArray) {
+            } else if (rawIzin instanceof JSONArray) {
                 JSONArray izinArray = (JSONArray) rawIzin;
-
                 if (izinArray.length() == 0) {
-                    tvIzin.setText("Tidak ada izin terbaru");
+                    tvIzin.setText("Belum ada izin terbaru");
                     return;
                 }
 
                 long latestTime = 0;
-
                 for (int i = 0; i < izinArray.length(); i++) {
                     JSONObject izin = izinArray.getJSONObject(i);
                     String tanggalPengajuan = izin.optString("tanggal_pengajuan", "");
-
                     if (!tanggalPengajuan.isEmpty()) {
                         long time = parseDateToMillis(tanggalPengajuan);
                         if (time > latestTime) {
@@ -290,44 +284,45 @@ public class DashboardFragment extends Fragment {
                 }
             }
 
-            if (latestIzin != null) {
-                String status = latestIzin.optString("status", "Pending");
-                String tanggalPengajuan = latestIzin.optString("tanggal_pengajuan", "");
-                String jenisIzin = latestIzin.optString("jenis_izin", "");
-                String alasan = latestIzin.optString("alasan", "");
-
-                StringBuilder display = new StringBuilder();
-                display.append(status);
-
-                if (!jenisIzin.isEmpty()) {
-                    display.append(" (").append(jenisIzin).append(")");
-                }
-
-                if (!tanggalPengajuan.isEmpty()) {
-                    String tanggalOnly = tanggalPengajuan.split(" ")[0];
-                    if (!tanggalOnly.contains("0000")) {
-                        String formattedDate = formatTanggal(tanggalOnly);
-                        display.append("\n").append(formattedDate);
-                    }
-                }
-
-                if (!alasan.isEmpty() && alasan.length() <= 50) {
-                    display.append("\n").append(alasan);
-                }
-
-                tvIzin.setText(display.toString());
-                Log.d(TAG, "Latest Izin: " + status);
-            } else {
-                tvIzin.setText("Tidak ada izin terbaru");
+            if (latestIzin == null) {
+                tvIzin.setText("Belum ada izin terbaru");
+                return;
             }
+
+            // Ambil data dengan aman
+            String status = latestIzin.optString("status", "Pending");
+            String jenisIzin = latestIzin.optString("jenis_izin", "");
+            String tanggalPengajuan = latestIzin.optString("tanggal_pengajuan", "");
+            String alasan = latestIzin.optString("alasan", "");
+
+            StringBuilder display = new StringBuilder();
+            display.append(status.isEmpty() ? "Pending" : status);
+
+            if (!jenisIzin.isEmpty()) {
+                display.append(" (").append(jenisIzin).append(")");
+            }
+
+            if (!tanggalPengajuan.isEmpty()) {
+                String tanggalOnly = tanggalPengajuan.split(" ")[0];
+                if (!tanggalOnly.contains("0000") && !tanggalOnly.contains("null")) {
+                    String formattedDate = formatTanggal(tanggalOnly);
+                    display.append("\n").append(formattedDate);
+                }
+            }
+
+            if (!alasan.isEmpty() && alasan.length() <= 50 && !alasan.equalsIgnoreCase("null")) {
+                display.append("\n").append(alasan);
+            }
+
+            tvIzin.setText(display.toString());
+            Log.d(TAG, "Latest Izin: " + display.toString());
 
         } catch (Exception e) {
             Log.e(TAG, "Error displaying izin: " + e.getMessage());
-            tvIzin.setText("Error memuat izin");
+            tvIzin.setText("Belum ada izin terbaru");
         }
     }
 
-    // DIPERBAIKI: Selalu update foto profil dari SharedPreferences terbaru
     private void loadProfileImageExactlyLikeProfilePage() {
         if (getContext() == null || imgProfile == null) return;
 
@@ -338,13 +333,11 @@ public class DashboardFragment extends Fragment {
         if ("custom".equals(imageType)) {
             String imageUrl = prefs.getString("profile_image_url", "");
             if (!imageUrl.isEmpty()) {
-                // Nanti bisa diganti dengan Glide/Picasso
                 imgProfile.setImageResource(R.drawable.icon_cowo);
             } else {
                 imgProfile.setImageResource("cewe".equals(genderIcon) ? R.drawable.icon_cewe : R.drawable.icon_cowo);
             }
         } else {
-            // Default: pakai icon gender
             imgProfile.setImageResource("cewe".equals(genderIcon) ? R.drawable.icon_cewe : R.drawable.icon_cowo);
         }
 
@@ -352,19 +345,13 @@ public class DashboardFragment extends Fragment {
     }
 
     private long parseDateToMillis(String dateStr) {
-        if (dateStr == null || dateStr.trim().isEmpty()) {
-            return 0;
-        }
+        if (dateStr == null || dateStr.trim().isEmpty()) return 0;
 
         String[] patterns = {
-                "yyyy-MM-dd HH:mm:ss",
-                "yyyy-MM-dd",
-                "dd-MM-yyyy HH:mm:ss",
-                "dd-MM-yyyy",
-                "dd/MM/yyyy HH:mm:ss",
-                "dd/MM/yyyy",
-                "yyyy/MM/dd HH:mm:ss",
-                "yyyy/MM/dd"
+                "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd",
+                "dd-MM-yyyy HH:mm:ss", "dd-MM-yyyy",
+                "dd/MM/yyyy HH:mm:ss", "dd/MM/yyyy",
+                "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd"
         };
 
         for (String pattern : patterns) {
@@ -372,25 +359,19 @@ public class DashboardFragment extends Fragment {
                 SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.ROOT);
                 sdf.setLenient(false);
                 Date date = sdf.parse(dateStr.trim());
-                if (date != null) {
-                    return date.getTime();
-                }
-            } catch (ParseException ignored) {
-            }
+                if (date != null) return date.getTime();
+            } catch (ParseException ignored) {}
         }
-
-        Log.w(TAG, "Failed to parse date: " + dateStr);
         return 0;
     }
 
     private String formatTanggal(String tanggal) {
         try {
-            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
-            SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMMM yyyy", new Locale("id", "ID"));
-            Date date = inputFormat.parse(tanggal);
-            return date != null ? outputFormat.format(date) : tanggal;
+            SimpleDateFormat input = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+            SimpleDateFormat output = new SimpleDateFormat("dd MMMM yyyy", new Locale("id", "ID"));
+            Date date = input.parse(tanggal);
+            return date != null ? output.format(date) : tanggal;
         } catch (Exception e) {
-            Log.e(TAG, "Error formatting date: " + e.getMessage());
             return tanggal;
         }
     }
@@ -408,9 +389,6 @@ public class DashboardFragment extends Fragment {
         Intent intent = new Intent(getActivity(), MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
-
-        if (getActivity() != null) {
-            getActivity().finish();
-        }
+        if (getActivity() != null) getActivity().finish();
     }
 }
