@@ -1,6 +1,7 @@
 package com.example.mobiles_tktech.profile;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -26,7 +27,10 @@ import com.example.mobiles_tktech.navigasi.NavigasiCard;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class ProfileFragment extends Fragment {
@@ -173,7 +177,12 @@ public class ProfileFragment extends Fragment {
         Button btnBatal = dialogView.findViewById(R.id.btn_batal_dialog);
 
         final EditText edtNama = createEdit("Nama Anak", tvAnakNama.getText().toString());
+
+        // PERBAIKAN: Ganti EditText biasa jadi klik muncul kalender untuk Tanggal Lahir
         final EditText edtTgl = createEdit("Tanggal Lahir (YYYY-MM-DD)", tvAnakTglLahir.getText().toString());
+        edtTgl.setFocusable(false);  // Tidak bisa ketik manual
+        edtTgl.setOnClickListener(v -> showDatePicker(edtTgl));
+
         final EditText edtAlamat = createEdit("Alamat", tvAnakAlamat.getText().toString());
 
         final Spinner spGender = new Spinner(context);
@@ -213,6 +222,21 @@ public class ProfileFragment extends Fragment {
         });
 
         btnBatal.setOnClickListener(v -> dialog.dismiss());
+    }
+
+    // Method baru: Munculkan DatePickerDialog
+    private void showDatePicker(EditText editText) {
+        Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog dialog = new DatePickerDialog(requireContext(),
+                (view, selectedYear, selectedMonth, selectedDay) -> {
+                    String selectedDate = String.format(Locale.US, "%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay);
+                    editText.setText(selectedDate);
+                }, year, month, day);
+        dialog.show();
     }
 
     private EditText createEdit(String hint, String value) {

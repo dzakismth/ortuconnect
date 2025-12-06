@@ -27,6 +27,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -102,7 +104,8 @@ public class KalenderFragment extends Fragment {
 
                         JSONArray data = json.getJSONArray("data");
                         parseAgendaData(data);
-                        tampilkanSemuaAgenda();  // LANGSUNG TAMPILKAN SEMUA AGENDA BULAN INI
+                        filterAndSortAgenda();  // FILTER (hilang kalau sudah lewat) + SORT (terdekat atas)
+                        tampilkanSemuaAgenda();  // TAMPILKAN YANG SUDAH DIFILTER & SORT
 
                     } catch (Exception e) {
                         tampilkanPesanKosong("Error memuat data");
@@ -124,11 +127,44 @@ public class KalenderFragment extends Fragment {
                         obj.optString("deskripsi", "Tidak ada keterangan")
                 ));
             }
-            // Urutkan terbaru di atas
-            agendaList.sort((a, b) -> b.tanggal.compareTo(a.tanggal));
         } catch (Exception e) {
-            Log.e("Kalender", "Parse error: " + e.getMessage());
+            Log.d("Kalender", "Parse error: " + e.getMessage());
         }
+    }
+
+    // FILTER (hilangkan yang sudah lewat) + SORT (terdekat di atas)
+    private void filterAndSortAgenda() {
+        // Dapatkan tanggal hari ini
+        Calendar today = Calendar.getInstance();
+        Date todayDate = today.getTime();
+
+        // Filter: hilangkan yang sudah lewat
+        List<AgendaItem> filteredList = new ArrayList<>();
+        for (AgendaItem item : agendaList) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+                Date agendaDate = sdf.parse(item.tanggal);
+                if (agendaDate != null && !agendaDate.before(todayDate)) {  // Hanya yang hari ini atau depan
+                    filteredList.add(item);
+                }
+            } catch (Exception ignored) {}
+        }
+        agendaList = filteredList;
+
+        // Sort: terdekat (ascending tanggal)
+        Collections.sort(agendaList, new Comparator<AgendaItem>() {
+            @Override
+            public int compare(AgendaItem a, AgendaItem b) {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+                    Date dateA = sdf.parse(a.tanggal);
+                    Date dateB = sdf.parse(b.tanggal);
+                    return dateA.compareTo(dateB);
+                } catch (Exception e) {
+                    return 0;
+                }
+            }
+        });
     }
 
     private void tampilkanSemuaAgenda() {

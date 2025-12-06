@@ -105,19 +105,14 @@ public class DashboardFragment extends Fragment {
 
     private void loadProfileFirst() {
         String url = API_PROFILE + username;
-        Log.d(TAG, "Loading profile: " + url);
-
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
                         if (response.getBoolean("success")) {
                             JSONObject data = response.getJSONObject("data");
                             idSiswa = data.getString("id_siswa");
-
                             requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE)
                                     .edit().putString("id_siswa", idSiswa).apply();
-
-                            Log.d(TAG, "ID Siswa obtained: " + idSiswa);
                             loadDashboard();
                             hasLoadedOnce = true;
                         } else {
@@ -125,13 +120,11 @@ public class DashboardFragment extends Fragment {
                             logoutUser();
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "Profile parse error: " + e.getMessage());
                         Toast.makeText(getContext(), "Error memuat profil", Toast.LENGTH_SHORT).show();
                         logoutUser();
                     }
                 },
                 error -> {
-                    Log.e(TAG, "Profile network error: " + error.toString());
                     Toast.makeText(getContext(), "Gagal memuat profil", Toast.LENGTH_SHORT).show();
                     logoutUser();
                 });
@@ -140,8 +133,6 @@ public class DashboardFragment extends Fragment {
 
     public void loadDashboard() {
         String url = API_DASHBOARD + idSiswa;
-        Log.d(TAG, "Loading dashboard: " + url);
-
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 res -> {
                     try {
@@ -157,7 +148,7 @@ public class DashboardFragment extends Fragment {
                             loadProfileImageExactlyLikeProfilePage();
                         }
 
-                        displayLatestAgenda(res);
+                        displayUpcomingAgenda(res);  // DIPERBAIKI: Hanya agenda mendatang
 
                         if (res.has("kehadiran_minggu_ini")) {
                             JSONObject k = res.getJSONObject("kehadiran_minggu_ini");
@@ -175,14 +166,12 @@ public class DashboardFragment extends Fragment {
                         Toast.makeText(getContext(), "Error parsing data", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> {
-                    Log.e(TAG, "Dashboard network error: " + error.toString());
-                    Toast.makeText(getContext(), "Gagal memuat dashboard", Toast.LENGTH_SHORT).show();
-                });
+                error -> Toast.makeText(getContext(), "Gagal memuat dashboard", Toast.LENGTH_SHORT).show());
         requestQueue.add(request);
     }
 
-    private void displayLatestAgenda(JSONObject res) {
+    // DIPERBAIKI: Hanya tampilkan agenda yang belum lewat (hari ini atau mendatang)
+    private void displayUpcomingAgenda(JSONObject res) {
         try {
             if (!res.has("agenda")) {
                 tvAgendaTitle.setText("Tidak ada agenda/pengumuman");
@@ -191,41 +180,36 @@ public class DashboardFragment extends Fragment {
             }
 
             JSONArray agendaArray = res.getJSONArray("agenda");
-
             if (agendaArray.length() == 0) {
                 tvAgendaTitle.setText("Tidak ada agenda/pengumuman");
                 tvAgendaDate.setText("");
                 return;
             }
 
-            JSONObject latestAgenda = null;
-            long latestTime = 0;
+            JSONObject upcomingAgenda = null;
+            long now = System.currentTimeMillis();
+            long closestFutureDiff = Long.MAX_VALUE;
 
             for (int i = 0; i < agendaArray.length(); i++) {
                 JSONObject agenda = agendaArray.getJSONObject(i);
-                String tanggal = agenda.optString("tanggal", "");
+                String tanggalStr = agenda.optString("tanggal", "");
+                if (tanggalStr.isEmpty()) continue;
 
-                if (!tanggal.isEmpty()) {
-                    long time = parseDateToMillis(tanggal);
-                    if (time > latestTime) {
-                        latestTime = time;
-                        latestAgenda = agenda;
+                long agendaTime = parseDateToMillis(tanggalStr);
+                if (agendaTime >= now) { // Hanya yang hari ini atau masa depan
+                    long diff = agendaTime - now;
+                    if (diff < closestFutureDiff) {
+                        closestFutureDiff = diff;
+                        upcomingAgenda = agenda;
                     }
                 }
             }
 
-            if (latestAgenda != null) {
-                String kegiatan = latestAgenda.optString("nama_kegiatan", "Kegiatan");
-                String tanggal = latestAgenda.optString("tanggal", "");
-
+            if (upcomingAgenda != null) {
+                String kegiatan = upcomingAgenda.optString("nama_kegiatan", "Kegiatan");
+                String tanggal = upcomingAgenda.optString("tanggal", "");
                 tvAgendaTitle.setText(kegiatan);
-
-                if (!tanggal.isEmpty()) {
-                    String formattedDate = formatTanggal(tanggal);
-                    tvAgendaDate.setText(formattedDate);
-                } else {
-                    tvAgendaDate.setText("");
-                }
+                tvAgendaDate.setText(tanggal.isEmpty() ? "" : formatTanggal(tanggal));
             } else {
                 tvAgendaTitle.setText("Tidak ada agenda/pengumuman");
                 tvAgendaDate.setText("");
@@ -238,18 +222,14 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    // DIPERBAIKI: TIDAK PERNAH TAMPILKAN "null" LAGI
     private void displayLatestIzin(JSONObject res) {
         try {
-            // Jika tidak ada key "izin_terbaru" sama sekali
             if (!res.has("izin_terbaru")) {
                 tvIzin.setText("Belum ada izin terbaru");
                 return;
             }
 
             Object rawIzin = res.get("izin_terbaru");
-
-            // Cek apakah benar-benar null / kosong / string "null"
             boolean isEmpty = rawIzin == null
                     || rawIzin == JSONObject.NULL
                     || (rawIzin instanceof String && ("null".equalsIgnoreCase(rawIzin.toString()) || rawIzin.toString().trim().isEmpty()));
@@ -260,7 +240,6 @@ public class DashboardFragment extends Fragment {
             }
 
             JSONObject latestIzin = null;
-
             if (rawIzin instanceof JSONObject) {
                 latestIzin = (JSONObject) rawIzin;
             } else if (rawIzin instanceof JSONArray) {
@@ -269,7 +248,6 @@ public class DashboardFragment extends Fragment {
                     tvIzin.setText("Belum ada izin terbaru");
                     return;
                 }
-
                 long latestTime = 0;
                 for (int i = 0; i < izinArray.length(); i++) {
                     JSONObject izin = izinArray.getJSONObject(i);
@@ -289,7 +267,6 @@ public class DashboardFragment extends Fragment {
                 return;
             }
 
-            // Ambil data dengan aman
             String status = latestIzin.optString("status", "Pending");
             String jenisIzin = latestIzin.optString("jenis_izin", "");
             String tanggalPengajuan = latestIzin.optString("tanggal_pengajuan", "");
@@ -297,25 +274,18 @@ public class DashboardFragment extends Fragment {
 
             StringBuilder display = new StringBuilder();
             display.append(status.isEmpty() ? "Pending" : status);
-
-            if (!jenisIzin.isEmpty()) {
-                display.append(" (").append(jenisIzin).append(")");
-            }
-
+            if (!jenisIzin.isEmpty()) display.append(" (").append(jenisIzin).append(")");
             if (!tanggalPengajuan.isEmpty()) {
                 String tanggalOnly = tanggalPengajuan.split(" ")[0];
                 if (!tanggalOnly.contains("0000") && !tanggalOnly.contains("null")) {
-                    String formattedDate = formatTanggal(tanggalOnly);
-                    display.append("\n").append(formattedDate);
+                    display.append("\n").append(formatTanggal(tanggalOnly));
                 }
             }
-
             if (!alasan.isEmpty() && alasan.length() <= 50 && !alasan.equalsIgnoreCase("null")) {
                 display.append("\n").append(alasan);
             }
 
             tvIzin.setText(display.toString());
-            Log.d(TAG, "Latest Izin: " + display.toString());
 
         } catch (Exception e) {
             Log.e(TAG, "Error displaying izin: " + e.getMessage());
@@ -340,20 +310,12 @@ public class DashboardFragment extends Fragment {
         } else {
             imgProfile.setImageResource("cewe".equals(genderIcon) ? R.drawable.icon_cewe : R.drawable.icon_cowo);
         }
-
-        Log.d(TAG, "Foto profil diperbarui → gender: " + genderIcon);
     }
 
     private long parseDateToMillis(String dateStr) {
         if (dateStr == null || dateStr.trim().isEmpty()) return 0;
 
-        String[] patterns = {
-                "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd",
-                "dd-MM-yyyy HH:mm:ss", "dd-MM-yyyy",
-                "dd/MM/yyyy HH:mm:ss", "dd/MM/yyyy",
-                "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd"
-        };
-
+        String[] patterns = {"yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd", "dd-MM-yyyy", "dd/MM/yyyy"};
         for (String pattern : patterns) {
             try {
                 SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.ROOT);
@@ -369,8 +331,7 @@ public class DashboardFragment extends Fragment {
         try {
             SimpleDateFormat input = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
             SimpleDateFormat output = new SimpleDateFormat("dd MMMM yyyy", new Locale("id", "ID"));
-            Date date = input.parse(tanggal);
-            return date != null ? output.format(date) : tanggal;
+            return output.format(input.parse(tanggal));
         } catch (Exception e) {
             return tanggal;
         }

@@ -120,6 +120,23 @@ public class PerizinanFragment extends Fragment {
             return;
         }
 
+        // PERBAIKAN: Validasi tanggal selesai >= tanggal mulai
+        if (!tanggalSelesai.isEmpty()) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                Date dateMulai = sdf.parse(tanggalMulai);
+                Date dateSelesai = sdf.parse(tanggalSelesai);
+
+                if (dateSelesai.before(dateMulai)) {
+                    Toast.makeText(getContext(), "Tanggal selesai tidak boleh lebih awal dari tanggal mulai", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } catch (Exception e) {
+                Toast.makeText(getContext(), "Format tanggal salah", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
         SharedPreferences prefs = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         String username = prefs.getString("username", "");
 
